@@ -30,7 +30,6 @@ O sistema possui dois tipos de usuários:
 - Organizar perguntas por matéria
 - Definir tema, título e tamanho do tabuleiro
 - Configurar níveis de dificuldade
-- Gerar automaticamente a matriz de letras
 - Visualizar seus caça-palavras
 - Jogar os caça-palavras criados para testar e avaliar seu funcionamento
 
