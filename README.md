@@ -2,7 +2,7 @@
 
 ## Sobre o projeto
 
-O WordHunt é um jogo educativo de caça-palavras desenvolvido na Disciplina "Projeto e construção de sistemas". O sistema tem como objetivo proporcionar uma forma interativa e digital de aprendizagem, permitindo que os alunos encontrem palavras relacionadas a determinados temas e associem cada palavra à sua respectiva pergunta.
+O WordHunt é um jogo educativo de caça-palavras desenvolvido na Disciplina "Projeto e construção de sistemas". O sistema tem como objetivo proporcionar uma forma interativa e digital de aprendizagem, permitindo que os alunos encontrem palavras relacionadas a determinado assunto de uma disciplina e associem cada palavra à sua respectiva pergunta.
 
 O sistema possui dois tipos de usuários:
 
