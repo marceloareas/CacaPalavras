@@ -6,8 +6,8 @@ O WordHunt é um jogo educativo de caça-palavras desenvolvido na Disciplina "Pr
 
 O sistema possui dois tipos de usuários:
 
-- **Aluno:** pode selecionar e jogar caça-palavras, selecionar a dificuldade, associar a pergunta à respectiva palavra encontrada, acompanhar sua pontuação e consultar seu histórico de partidas.
-- **Professor:** pode criar e gerenciar caça-palavras, cadastrar perguntas, palavras, definir seus temas, configurar dificuldade e também poderá jogar para testar e visualizar o funcionamento dos jogos criados.
+- **Aluno:** pode filtrar caça-palavras, selecionar e jogar o caça-palavras, associar a pergunta à respectiva palavra encontrada e consultar seu histórico de partidas.
+- **Professor:** pode criar e gerenciar caça-palavras, cadastrar perguntas e palavras correspondentes, definir novas disciplinas e assuntos, configurar dificuldade e também poderá jogar para testar e visualizar o funcionamento dos jogos criados.
 
 ---
 
@@ -16,7 +16,7 @@ O sistema possui dois tipos de usuários:
 ### Aluno
 
 - Selecionar um caça-palavras
-- Filtrar jogos por tema e dificuldade
+- Filtrar jogos por professor, disciplina e assunto
 - Utilizar o modo aleatório
 - Encontrar palavras na matriz
 - Associar palavras às respectivas perguntas
@@ -27,9 +27,7 @@ O sistema possui dois tipos de usuários:
 
 - Criar, editar e excluir caça-palavras
 - Cadastrar palavras e suas respectivas perguntas
-- Organizar perguntas por matéria
-- Definir tema, título e tamanho do tabuleiro
-- Configurar níveis de dificuldade
+- Definir disciplina, assunto e dificuldade do caça-palavras
 - Visualizar seus caça-palavras
 - Jogar os caça-palavras criados para testar e avaliar seu funcionamento
 
