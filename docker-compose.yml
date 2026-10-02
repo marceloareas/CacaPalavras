@@ -20,3 +20,13 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://admin:adminpassword@db:5432/wordhunt
+
+  frontend:
+    image: nginx:alpine
+    container_name: wordhunt_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    depends_on:
+      - backend
