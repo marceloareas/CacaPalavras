@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>WordHunt</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- TELA DE LOGIN -->
+        <div id="screen-login" class="screen active">
+            <h2>Bem-vindo ao WordHunt</h2>
+            <select id="user-select">
+                <option value="">Carregando usuários...</option>
+            </select>
+            <button onclick="login()">Entrar no Sistema</button>
+        </div>
+
+        <!-- TELA MENU PROFESSOR -->
+        <div id="screen-menu-prof" class="screen">
+            <h2>Painel do Professor</h2>
+            <div class="btn-group" style="flex-direction: column;">
+                <button onclick="carregarMeusJogos()">Visualizar Meus Caça-Palavras</button>
+                <button onclick="iniciarCriacao()">Criar Novo Caça-Palavras</button>
+            </div>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
+        </div>
+
+        <!-- TELA LISTAGEM DE JOGOS -->
+        <div id="screen-meus-jogos" class="screen">
+            <h2>Meus Caça-Palavras</h2>
+            <ul id="lista-meus-jogos" class="list-container" style="max-height: 400px;"></ul>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
+        </div>
+
+        <!-- BARRA DE PROGRESSO -->
+        <div id="progress-bar" class="progress-bar" style="display: none;">
+            <div class="step" id="step-ind-1">1. Disciplina</div>
+            <div class="step" id="step-ind-2">2. Assunto</div>
+            <div class="step" id="step-ind-3">3. Dificuldade</div>
+            <div class="step" id="step-ind-4">4. Palavras</div>
+        </div>
+
+        <!-- PASSO 1 -->
+        <div id="screen-step1" class="screen">
+            <h2>Escolha ou Crie a Disciplina</h2>
+            <div class="input-container">
+                <input type="text" id="input-disciplina" placeholder="Ex: Química" autocomplete="off" oninput="filtrarDropdown('disciplina')" onfocus="filtrarDropdown('disciplina')">
+                <ul id="dropdown-disciplina" class="autocomplete-list list-container"></ul>
+            </div>
+            <div class="btn-group">
+                <button class="btn-voltar" onclick="voltarAoMenu()">⬅ Cancelar</button>
+                <button onclick="goToStep(2)">Avançar ➔</button>
+            </div>
+        </div>
+
+        <!-- PASSO 2 -->
+        <div id="screen-step2" class="screen">
+            <h2>Escolha ou Crie o Assunto</h2>
+            <div class="input-container">
+                <input type="text" id="input-assunto" placeholder="Ex: Estrutura Atômica" autocomplete="off" oninput="filtrarDropdown('assunto')" onfocus="filtrarDropdown('assunto')">
+                <ul id="dropdown-assunto" class="autocomplete-list list-container"></ul>
+            </div>
+            <div class="btn-group">
+                <button class="btn-voltar" onclick="goToStep(1)">⬅ Voltar</button>
+                <button onclick="goToStep(3)">Avançar ➔</button>
+            </div>
+        </div>
+
+        <!-- PASSO 3 -->
+        <div id="screen-step3" class="screen">
+            <h2>Selecione a Dificuldade</h2>
+            <select id="select-dificuldade">
+                <option value="Fácil">Fácil (Sem diagonal ou invertida)</option>
+                <option value="Médio">Médio</option>
+                <option value="Difícil">Difícil</option>
+            </select>
+            <div class="btn-group">
+                <button class="btn-voltar" onclick="goToStep(2)">⬅ Voltar</button>
+                <button onclick="goToStep(4)">Avançar ➔</button>
+            </div>
+        </div>
+
+        <!-- PASSO 4 -->
+        <div id="screen-step4" class="screen">
+            <h2>Cadastro de Palavras e Dicas</h2>
+            <p style="text-align: center; margin-top: 0;">Cadastre de 10 a 25 palavras. Atuais: <span id="word-count" style="color: #202020; font-weight: bold;">0</span>/25</p>
+            
+            <input type="text" id="input-pergunta" placeholder="Digite a Dica ou Pergunta" autocomplete="off">
+            <input type="text" id="input-resposta" placeholder="Digite a Resposta (Uma única palavra)" autocomplete="off">
+            
+            <button style="margin-bottom: 15px;" onclick="addWord()">Adicionar Par (OK) ✔</button>
+            <ul id="lista-palavras" class="list-container"></ul>
+            
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn-voltar" onclick="goToStep(3)">⬅ Voltar</button>
+                <button onclick="salvarJogo()">Salvar Jogo!</button>
+            </div>
+        </div>
+
+        <!-- TELA DE PREVIEW (Para Criação e Visualização) -->
+        <div id="screen-preview" class="screen">
+            <h2 id="preview-title">Jogo Salvo com Sucesso!</h2>
+            <div id="matriz-preview" class="matriz-grid"></div>
+            <button id="btn-preview-voltar" style="margin-top: 20px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
