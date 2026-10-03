@@ -58,8 +58,7 @@ async function iniciarCriacao() {
     document.getElementById("select-dificuldade").value = "Fácil";
     atualizarListaPalavrasUI();
     
-    // Busca e salva disciplinas em memória para o filtro customizado
-    const res = await fetch(`${API_URL}/disciplinas/${currentUser}`);
+    const res = await fetch(`${API_URL}/disciplinas`);
     disciplinasSalvas = await res.json();
     
     goToStep(1);
@@ -144,7 +143,7 @@ async function editarJogo(id_jogo) {
         document.getElementById("select-dificuldade").value = gameData.dificuldade;
         atualizarListaPalavrasUI();
         
-        const resDisc = await fetch(`${API_URL}/disciplinas/${currentUser}`);
+        const resDisc = await fetch(`${API_URL}/disciplinas`);
         disciplinasSalvas = await resDisc.json();
         
         goToStep(1);
@@ -153,16 +152,41 @@ async function editarJogo(id_jogo) {
 
 async function goToStep(step) {
     if (step === 2) {
-        gameData.disciplina = document.getElementById("input-disciplina").value.trim();
-        if(!gameData.disciplina) return alert("Por favor, preencha a disciplina.");
+        const digitado = document.getElementById("input-disciplina").value.trim();
+        if(!digitado) return alert("Por favor, preencha a disciplina.");
         
-        const res = await fetch(`${API_URL}/assuntos/${currentUser}/${encodeURIComponent(gameData.disciplina)}`);
+        // Verifica duplicidade ignorando maiúsculas/minúsculas
+        const existente = disciplinasSalvas.find(d => d.toLowerCase() === digitado.toLowerCase());
+        
+        if (existente && digitado !== existente) {
+            alert(`A disciplina "${existente}" já existe no sistema. Ela foi selecionada automaticamente para evitar duplicações.`);
+            document.getElementById("input-disciplina").value = existente;
+            gameData.disciplina = existente;
+        } else {
+            gameData.disciplina = existente || digitado;
+        }
+        
+        // Busca assuntos globais da disciplina selecionada
+        const res = await fetch(`${API_URL}/assuntos/${encodeURIComponent(gameData.disciplina)}`);
         assuntosSalvos = await res.json();
     }
+    
     if (step === 3) {
-        gameData.assunto = document.getElementById("input-assunto").value.trim();
-        if(!gameData.assunto) return alert("Por favor, preencha o assunto.");
+        const digitadoAssunto = document.getElementById("input-assunto").value.trim();
+        if(!digitadoAssunto) return alert("Por favor, preencha o assunto.");
+
+        // Verifica duplicidade de assunto ignorando maiúsculas/minúsculas
+        const existenteAssunto = assuntosSalvos.find(a => a.toLowerCase() === digitadoAssunto.toLowerCase());
+        
+        if (existenteAssunto && digitadoAssunto !== existenteAssunto) {
+            alert(`O assunto "${existenteAssunto}" já existe nesta disciplina. Ele foi selecionado automaticamente para evitar duplicações.`);
+            document.getElementById("input-assunto").value = existenteAssunto;
+            gameData.assunto = existenteAssunto;
+        } else {
+            gameData.assunto = existenteAssunto || digitadoAssunto;
+        }
     }
+    
     if (step === 4) {
         gameData.dificuldade = document.getElementById("select-dificuldade").value;
     }

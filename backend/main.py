@@ -112,21 +112,22 @@ def criar_jogo(jogo: JogoCreate):
         
     return {"id_jogo": id_jogo, "matriz": matriz}
 
-@app.get("/api/disciplinas/{id_professor}")
-def get_disciplinas(id_professor: int):
+@app.get("/api/disciplinas")
+def get_disciplinas_globais():
     conn = get_db_connection()
     cur = conn.cursor()
-    # Busca apenas disciplinas únicas criadas por esse professor
-    cur.execute("SELECT DISTINCT disciplina FROM Caca_Palavras WHERE id_professor = %s;", (id_professor,))
+    # Busca todas as disciplinas criadas por qualquer professor
+    cur.execute("SELECT DISTINCT disciplina FROM Caca_Palavras ORDER BY disciplina ASC;")
     disciplinas = [row['disciplina'] for row in cur.fetchall()]
     conn.close()
     return disciplinas
 
-@app.get("/api/assuntos/{id_professor}/{disciplina}")
-def get_assuntos(id_professor: int, disciplina: str):
+@app.get("/api/assuntos/{disciplina}")
+def get_assuntos_globais(disciplina: str):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT DISTINCT assunto FROM Caca_Palavras WHERE id_professor = %s AND disciplina = %s;", (id_professor, disciplina))
+    # Busca todos os assuntos daquela disciplina criados por qualquer professor
+    cur.execute("SELECT DISTINCT assunto FROM Caca_Palavras WHERE disciplina = %s ORDER BY assunto ASC;", (disciplina,))
     assuntos = [row['assunto'] for row in cur.fetchall()]
     conn.close()
     return assuntos
