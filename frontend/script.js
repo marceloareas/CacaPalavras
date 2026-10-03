@@ -65,7 +65,7 @@ async function iniciarCriacao() {
     goToStep(1);
 }
 
-// === LOGICA DO DROPDOWN CUSTOMIZADO ===
+// === LOGICA DO DROPDOWN ===
 function filtrarDropdown(tipo) {
     const input = document.getElementById(`input-${tipo}`);
     const dropdown = document.getElementById(`dropdown-${tipo}`);
@@ -121,8 +121,8 @@ async function visualizarJogo(id_jogo) {
     if(res.ok) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = `Visualizando: ${data.assunto}`;
-        renderizarMatriz(data.matriz_letras);
-        document.getElementById("btn-preview-voltar").onclick = carregarMeusJogos; // Volta pra lista
+        renderizarPreview(data.matriz_letras, data.perguntas_respostas);
+        document.getElementById("btn-preview-voltar").onclick = carregarMeusJogos; 
         showScreen('screen-preview');
     }
 }
@@ -180,10 +180,22 @@ function atualizarListaPalavrasUI() {
         li.className = "list-item";
         li.innerHTML = `
             <span><b>Dica:</b> ${pr.pergunta} <br><b>Resp:</b> ${pr.resposta}</span> 
-            <button onclick="removerPalavra(${index})" style="flex: none; width: 40px; height: 40px; padding: 0; background-color: #202020; color: #f5f5ef; border-radius: 10px; box-shadow: none;">X</button>
+            <div style="display: flex; gap: 5px;">
+                <button onclick="editarPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #3498db; color: white; border-radius: 10px; box-shadow: none;">✎</button>
+                <button onclick="removerPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #e74c3c; color: white; border-radius: 10px; box-shadow: none;">X</button>
+            </div>
         `;
         ul.appendChild(li);
     });
+}
+
+function editarPalavra(index) {
+    // Joga os dados pro input e remove da lista para re-inserção
+    const pr = gameData.perguntas_respostas[index];
+    document.getElementById("input-pergunta").value = pr.pergunta;
+    document.getElementById("input-resposta").value = pr.resposta;
+    removerPalavra(index);
+    document.getElementById("input-pergunta").focus();
 }
 
 function removerPalavra(index) {
@@ -195,8 +207,8 @@ function addWord() {
     if (gameData.perguntas_respostas.length >= 25) return alert("Máximo de 25 palavras atingido!");
     
     const pergunta = document.getElementById("input-pergunta").value;
-    let resposta = document.getElementById("input-resposta").value.trim().toUpperCase();
-    resposta = resposta.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
+    // Pega a palavra exatamente como o professor digitou (mantendo acentos)
+    const resposta = document.getElementById("input-resposta").value.trim();
     
     if (!pergunta || !resposta || resposta.includes(" ")) {
         return alert("Preencha dica e resposta. A resposta deve ser uma palavra única sem espaços.");
@@ -229,8 +241,9 @@ async function salvarJogo() {
     if (res.ok) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = "Jogo Salvo com Sucesso!";
-        renderizarMatriz(data.matriz);
-        document.getElementById("btn-preview-voltar").onclick = voltarAoMenu; // Volta pro menu ao criar
+        // Chama o renderizador passando a matriz gerada e as dicas originais
+        renderizarPreview(data.matriz, gameData.perguntas_respostas);
+        document.getElementById("btn-preview-voltar").onclick = voltarAoMenu; 
         showScreen('screen-preview');
     } else {
         const err = await res.json();
@@ -250,3 +263,22 @@ function renderizarMatriz(matriz) {
         });
     });
 }
+
+function renderizarPreview(matriz, perguntas_respostas) {
+    // Renderiza a grade
+    const grid = document.getElementById("matriz-preview");
+    grid.innerHTML = "";
+    matriz.forEach(linha => {
+        linha.forEach(letra => {
+            const div = document.createElement("div");
+            div.className = "matriz-cell";
+            div.innerText = letra;
+            grid.appendChild(div);
+        });
+    }); 
+
+    // Renderiza a lista enumerada de dicas
+    const dicasList = document.getElementById("preview-dicas");
+    dicasList.innerHTML = perguntas_respostas.map(pr => `<li style="margin-bottom: 10px;">${pr.pergunta}</li>`).join("");
+}
+    

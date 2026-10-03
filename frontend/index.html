@@ -101,8 +101,20 @@
         <!-- TELA DE PREVIEW (Para Criação e Visualização) -->
         <div id="screen-preview" class="screen">
             <h2 id="preview-title">Jogo Salvo com Sucesso!</h2>
-            <div id="matriz-preview" class="matriz-grid"></div>
-            <button id="btn-preview-voltar" style="margin-top: 20px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
+            
+            <div class="preview-layout">
+                <div></div> 
+                <div class="preview-center">
+                    <div id="matriz-preview" class="matriz-grid" style="margin-top: 0;"></div>
+                </div>
+                <div class="dicas-lateral">
+                    <h3>Dicas</h3>
+                    <ol id="preview-dicas"></ol>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center;">
+                <button id="btn-preview-voltar" style="margin-top: 30px; max-width: 400px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
+            </div>
         </div>
     </div>
     <script src="script.js"></script>

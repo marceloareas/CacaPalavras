@@ -7,10 +7,10 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
+import unicodedata
 
 app = FastAPI()
 
-# Permite comunicação com o HTML local
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -30,16 +30,19 @@ class JogoCreate(BaseModel):
     dificuldade: str
     perguntas_respostas: list
 
+def remover_acentos(texto):
+    return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
+
 def gerar_matriz(palavras_lista, dificuldade):
     tamanho = 15
     matriz = [['' for _ in range(tamanho)] for _ in range(tamanho)]
     
     for palavra in palavras_lista:
-        palavra = palavra.upper().replace(" ", "")
+        # Agora o backend tira acentos e espaços, deixando a lista original intacta
+        palavra_limpa = remover_acentos(palavra).upper().replace(" ", "")
         colocado = False
         tentativas = 0
         while not colocado and tentativas < 200:
-            # Regra: Fácil não pode diagonal nem ao contrário
             seletor_direcao = [(0,1), (1,0)] # Direita, Baixo
             if dificuldade != "Fácil":
                 seletor_direcao.extend([(1,1), (-1,-1), (0,-1), (-1,0), (1,-1), (-1,1)])
@@ -48,12 +51,12 @@ def gerar_matriz(palavras_lista, dificuldade):
             linha = random.randint(0, tamanho - 1)
             coluna = random.randint(0, tamanho - 1)
             
-            fim_linha = linha + dir_x * (len(palavra) - 1)
-            fim_coluna = coluna + dir_y * (len(palavra) - 1)
+            fim_linha = linha + dir_x * (len(palavra_limpa) - 1)
+            fim_coluna = coluna + dir_y * (len(palavra_limpa) - 1)
             
             if 0 <= fim_linha < tamanho and 0 <= fim_coluna < tamanho:
                 sobreposicao_valida = True
-                for i, char in enumerate(palavra):
+                for i, char in enumerate(palavra_limpa):
                     r = linha + dir_x * i
                     c = coluna + dir_y * i
                     if matriz[r][c] != '' and matriz[r][c] != char:
@@ -61,7 +64,7 @@ def gerar_matriz(palavras_lista, dificuldade):
                         break
                 
                 if sobreposicao_valida:
-                    for i, char in enumerate(palavra):
+                    for i, char in enumerate(palavra_limpa):
                         r = linha + dir_x * i
                         c = coluna + dir_y * i
                         matriz[r][c] = char
