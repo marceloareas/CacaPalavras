@@ -30,53 +30,88 @@ class JogoCreate(BaseModel):
     dificuldade: str
     perguntas_respostas: list
 
+# Configuração por dificuldade (tamanho da grade e máximo de palavras).
+# Os máximos de palavras devem ser iguais a LIMITES em frontend/script.js.
+CONFIG = {
+    "Fácil":   {"linhas": 15, "colunas": 17, "max_palavras": 15},
+    "Médio":   {"linhas": 15, "colunas": 21, "max_palavras": 20},
+    "Difícil": {"linhas": 15, "colunas": 25, "max_palavras": 25},
+}
+MIN_PALAVRAS = 10
+MAX_LETRAS = 15
+
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
 
-def gerar_matriz(palavras_lista, dificuldade):
-    tamanho = 15
-    matriz = [['' for _ in range(tamanho)] for _ in range(tamanho)]
-    
-    for palavra in palavras_lista:
-        # Agora o backend tira acentos e espaços, deixando a lista original intacta
-        palavra_limpa = remover_acentos(palavra).upper().replace(" ", "")
-        colocado = False
-        tentativas = 0
-        while not colocado and tentativas < 200:
-            seletor_direcao = [(0,1), (1,0)] # Direita, Baixo
-            if dificuldade != "Fácil":
-                seletor_direcao.extend([(1,1), (-1,-1), (0,-1), (-1,0), (1,-1), (-1,1)])
-            
-            dir_x, dir_y = random.choice(seletor_direcao)
-            linha = random.randint(0, tamanho - 1)
-            coluna = random.randint(0, tamanho - 1)
-            
-            fim_linha = linha + dir_x * (len(palavra_limpa) - 1)
-            fim_coluna = coluna + dir_y * (len(palavra_limpa) - 1)
-            
-            if 0 <= fim_linha < tamanho and 0 <= fim_coluna < tamanho:
-                sobreposicao_valida = True
-                for i, char in enumerate(palavra_limpa):
-                    r = linha + dir_x * i
-                    c = coluna + dir_y * i
-                    if matriz[r][c] != '' and matriz[r][c] != char:
-                        sobreposicao_valida = False
-                        break
-                
-                if sobreposicao_valida:
-                    for i, char in enumerate(palavra_limpa):
-                        r = linha + dir_x * i
-                        c = coluna + dir_y * i
-                        matriz[r][c] = char
-                    colocado = True
-            tentativas += 1
+def _tentar_gerar(palavras, linhas, colunas, dificuldade):
+    matriz = [['' for _ in range(colunas)] for _ in range(linhas)]
+    direcoes = [(0, 1), (1, 0)]  # Regra: Fácil só direita e baixo
+    if dificuldade != "Fácil":
+        direcoes += [(1, 1), (-1, -1), (0, -1), (-1, 0), (1, -1), (-1, 1)]
 
-    # Preencher espaços vazios
-    for r in range(tamanho):
-        for c in range(tamanho):
-            if matriz[r][c] == '':
-                matriz[r][c] = random.choice(string.ascii_uppercase)
+    # palavras maiores primeiro: são as mais difíceis de encaixar
+    for palavra in sorted(palavras, key=len, reverse=True):
+        colocada = False
+        for _ in range(500):
+            dl, dc = random.choice(direcoes)
+            linha = random.randint(0, linhas - 1)
+            coluna = random.randint(0, colunas - 1)
+            fim_l = linha + dl * (len(palavra) - 1)
+            fim_c = coluna + dc * (len(palavra) - 1)
+            if not (0 <= fim_l < linhas and 0 <= fim_c < colunas):
+                continue
+            if all(matriz[linha + dl * i][coluna + dc * i] in ('', ch)
+                   for i, ch in enumerate(palavra)):
+                for i, ch in enumerate(palavra):
+                    matriz[linha + dl * i][coluna + dc * i] = ch
+                colocada = True
+                break
+        if not colocada:
+            return None
     return matriz
+
+def gerar_matriz(palavras_lista, dificuldade):
+    cfg = CONFIG[dificuldade]
+    linhas, colunas = cfg["linhas"], cfg["colunas"]
+    # O backend tira acentos e espaços para a grade, deixando a lista original intacta
+    palavras = [remover_acentos(p).upper().replace(" ", "") for p in palavras_lista]
+
+    for _ in range(50):  # recomeça a grade se alguma palavra não coube
+        matriz = _tentar_gerar(palavras, linhas, colunas, dificuldade)
+        if matriz:
+            # Preencher espaços vazios
+            for r in range(linhas):
+                for c in range(colunas):
+                    if matriz[r][c] == '':
+                        matriz[r][c] = random.choice(string.ascii_uppercase)
+            return matriz
+    raise ValueError("Não coube na grade. Reduza o número de palavras ou use palavras menores.")
+
+def validar_jogo(jogo):
+    cfg = CONFIG.get(jogo.dificuldade)
+    if not cfg:
+        raise HTTPException(status_code=400, detail="Dificuldade inválida.")
+    pares = jogo.perguntas_respostas
+    if not MIN_PALAVRAS <= len(pares) <= cfg["max_palavras"]:
+        raise HTTPException(status_code=400,
+            detail=f"No nível {jogo.dificuldade}, o jogo deve ter de {MIN_PALAVRAS} a {cfg['max_palavras']} palavras.")
+    for p in pares:
+        original = str(p.get("resposta", ""))
+        resp = remover_acentos(original)  # acentos são aceitos; a grade usa a versão sem acento
+        if not p.get("pergunta") or not (resp.isalpha() and resp.isascii()):
+            raise HTTPException(status_code=400,
+                detail="Cada par precisa de dica e de uma resposta só com letras (acentos são aceitos), sem espaços ou números.")
+        if len(resp) > MAX_LETRAS:
+            raise HTTPException(status_code=400,
+                detail=f"A resposta '{original}' tem mais de {MAX_LETRAS} letras.")
+
+def preparar_matriz(jogo):
+    validar_jogo(jogo)
+    palavras = [pr["resposta"] for pr in jogo.perguntas_respostas]
+    try:
+        return gerar_matriz(palavras, jogo.dificuldade)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.get("/api/usuarios")
 def get_usuarios():
@@ -89,12 +124,9 @@ def get_usuarios():
 
 @app.post("/api/jogos")
 def criar_jogo(jogo: JogoCreate):
+    matriz = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    # Extrair apenas as palavras para o gerador
-    palavras = [pr["resposta"] for pr in jogo.perguntas_respostas]
-    matriz = gerar_matriz(palavras, jogo.dificuldade)
     
     try:
         cur.execute("""
@@ -164,11 +196,9 @@ def get_jogo_detalhe(id_jogo: int):
 
 @app.put("/api/jogos/{id_jogo}")
 def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
+    matriz = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
     conn = get_db_connection()
     cur = conn.cursor()
-    
-    palavras = [pr["resposta"] for pr in jogo.perguntas_respostas]
-    matriz = gerar_matriz(palavras, jogo.dificuldade)
     
     try:
         cur.execute("""
