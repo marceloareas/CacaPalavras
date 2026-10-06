@@ -5,6 +5,11 @@ let gameData = { disciplina: "", assunto: "", dificuldade: "Fácil", perguntas_r
 let disciplinasSalvas = [];
 let assuntosSalvos = [];
 
+// Limites do jogo. Devem ser iguais ao CONFIG do backend (backend/main.py).
+const LIMITES = { "Fácil": 15, "Médio": 20, "Difícil": 25 };
+const MAX_LETRAS = 15;
+let parEmEdicao = null; // índice do par que está sendo editado (null = cadastrando um novo)
+
 window.onload = async () => {
     const res = await fetch(`${API_URL}/usuarios`);
     const usuarios = await res.json();
@@ -29,6 +34,8 @@ function showScreen(id) {
     } else {
         document.getElementById("progress-bar").style.display = "none";
     }
+    // a tela de visualização precisa de mais largura (dicas + grade)
+    document.querySelector(".container").classList.toggle("wide", id === "screen-preview");
 }
 
 function updateProgressBar(step) {
@@ -56,7 +63,7 @@ async function iniciarCriacao() {
     document.getElementById("input-disciplina").value = "";
     document.getElementById("input-assunto").value = "";
     document.getElementById("select-dificuldade").value = "Fácil";
-    atualizarListaPalavrasUI();
+    cancelarEdicao(); // sai do modo de edição de par e atualiza a lista
     
     const res = await fetch(`${API_URL}/disciplinas`);
     disciplinasSalvas = await res.json();
@@ -120,7 +127,7 @@ async function visualizarJogo(id_jogo) {
     if(res.ok) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = `Visualizando: ${data.assunto}`;
-        renderizarPreview(data.matriz_letras, data.perguntas_respostas);
+        mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade);
         document.getElementById("btn-preview-voltar").onclick = carregarMeusJogos; 
         showScreen('screen-preview');
     }
@@ -141,7 +148,7 @@ async function editarJogo(id_jogo) {
         document.getElementById("input-disciplina").value = gameData.disciplina;
         document.getElementById("input-assunto").value = gameData.assunto;
         document.getElementById("select-dificuldade").value = gameData.dificuldade;
-        atualizarListaPalavrasUI();
+        cancelarEdicao(); // sai do modo de edição de par e atualiza a lista
         
         const resDisc = await fetch(`${API_URL}/disciplinas`);
         disciplinasSalvas = await resDisc.json();
@@ -189,6 +196,7 @@ async function goToStep(step) {
     
     if (step === 4) {
         gameData.dificuldade = document.getElementById("select-dificuldade").value;
+        atualizarListaPalavrasUI(); // atualiza o limite mostrado na tela
     }
 
     showScreen(`screen-step${step}`);
@@ -197,14 +205,16 @@ async function goToStep(step) {
 
 function atualizarListaPalavrasUI() {
     document.getElementById("word-count").innerText = gameData.perguntas_respostas.length;
+    const max = LIMITES[gameData.dificuldade];
+    document.querySelectorAll(".word-max").forEach(el => el.innerText = max);
     const ul = document.getElementById("lista-palavras");
     ul.innerHTML = "";
     gameData.perguntas_respostas.forEach((pr, index) => {
         const li = document.createElement("li");
-        li.className = "list-item";
+        li.className = "list-item" + (index === parEmEdicao ? " em-edicao" : "");
         li.innerHTML = `
-            <span><b>Dica:</b> ${pr.pergunta} <br><b>Resp:</b> ${pr.resposta}</span> 
-            <div style="display: flex; gap: 5px;">
+            <span class="texto-par"><b>Dica:</b> ${pr.pergunta} <br><b>Resp:</b> ${pr.resposta}</span> 
+            <div class="list-acoes">
                 <button onclick="editarPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #3498db; color: white; border-radius: 10px; box-shadow: none;">✎</button>
                 <button onclick="removerPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #e74c3c; color: white; border-radius: 10px; box-shadow: none;">X</button>
             </div>
@@ -214,21 +224,54 @@ function atualizarListaPalavrasUI() {
 }
 
 function editarPalavra(index) {
-    // Joga os dados pro input e remove da lista para re-inserção
+    // O par continua na lista: só é substituído quando o professor confirmar
     const pr = gameData.perguntas_respostas[index];
+    parEmEdicao = index;
     document.getElementById("input-pergunta").value = pr.pergunta;
     document.getElementById("input-resposta").value = pr.resposta;
-    removerPalavra(index);
+    atualizarListaPalavrasUI(); // destaca o par em edição
+    atualizarModoEdicaoUI();
     document.getElementById("input-pergunta").focus();
 }
 
+function cancelarEdicao() {
+    parEmEdicao = null;
+    document.getElementById("input-pergunta").value = "";
+    document.getElementById("input-resposta").value = "";
+    atualizarListaPalavrasUI();
+    atualizarModoEdicaoUI();
+}
+
+function atualizarModoEdicaoUI() {
+    const editando = parEmEdicao !== null;
+    document.getElementById("btn-add-par").innerText = editando ? "Salvar Alteração ✔" : "Adicionar Par (OK) ✔";
+    document.getElementById("btn-cancelar-edicao").style.display = editando ? "block" : "none";
+}
+
 function removerPalavra(index) {
+    if (parEmEdicao !== null) {
+        if (index === parEmEdicao) {
+            parEmEdicao = null; // o par que estava em edição foi excluído
+            document.getElementById("input-pergunta").value = "";
+            document.getElementById("input-resposta").value = "";
+        } else if (index < parEmEdicao) {
+            parEmEdicao--; // a lista andou uma posição
+        }
+    }
     gameData.perguntas_respostas.splice(index, 1);
     atualizarListaPalavrasUI();
+    atualizarModoEdicaoUI();
+}
+
+function removerAcentos(texto) {
+    return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function addWord() {
-    if (gameData.perguntas_respostas.length >= 25) return alert("Máximo de 25 palavras atingido!");
+    const max = LIMITES[gameData.dificuldade];
+    if (parEmEdicao === null && gameData.perguntas_respostas.length >= max) {
+        return alert(`Máximo de ${max} palavras atingido para o nível ${gameData.dificuldade}!`);
+    }
     
     const pergunta = document.getElementById("input-pergunta").value;
     // Pega a palavra exatamente como o professor digitou (mantendo acentos)
@@ -237,9 +280,22 @@ function addWord() {
     if (!pergunta || !resposta || resposta.includes(" ")) {
         return alert("Preencha dica e resposta. A resposta deve ser uma palavra única sem espaços.");
     }
+    const semAcento = removerAcentos(resposta);
+    if (!/^[A-Za-z]+$/.test(semAcento)) {
+        return alert("A resposta deve ter apenas letras (acentos são aceitos), sem números ou símbolos.");
+    }
+    if (semAcento.length > MAX_LETRAS) {
+        return alert(`A resposta deve ter no máximo ${MAX_LETRAS} letras.`);
+    }
 
-    gameData.perguntas_respostas.push({ pergunta, resposta });
+    if (parEmEdicao !== null) {
+        gameData.perguntas_respostas[parEmEdicao] = { pergunta, resposta }; // substitui o par editado
+        parEmEdicao = null;
+    } else {
+        gameData.perguntas_respostas.push({ pergunta, resposta });
+    }
     atualizarListaPalavrasUI();
+    atualizarModoEdicaoUI();
     
     document.getElementById("input-pergunta").value = "";
     document.getElementById("input-resposta").value = "";
@@ -249,6 +305,10 @@ function addWord() {
 async function salvarJogo() {
     if (gameData.perguntas_respostas.length < 10) {
         return alert("O sistema exige no mínimo 10 palavras cadastradas!");
+    }
+    const max = LIMITES[gameData.dificuldade];
+    if (gameData.perguntas_respostas.length > max) {
+        return alert(`O nível ${gameData.dificuldade} permite no máximo ${max} palavras. Remova algumas ou mude a dificuldade.`);
     }
     
     const payload = { id_professor: parseInt(currentUser), ...gameData };
@@ -266,7 +326,7 @@ async function salvarJogo() {
         const data = await res.json();
         document.getElementById("preview-title").innerText = "Jogo Salvo com Sucesso!";
         // Chama o renderizador passando a matriz gerada e as dicas originais
-        renderizarPreview(data.matriz, gameData.perguntas_respostas);
+        mostrarPreview(data.matriz, gameData.perguntas_respostas, gameData.dificuldade);
         document.getElementById("btn-preview-voltar").onclick = voltarAoMenu; 
         showScreen('screen-preview');
     } else {
@@ -275,34 +335,115 @@ async function salvarJogo() {
     }
 }
 
+// ---------- Visualização do jogo: dicas à esquerda + grade à direita ----------
+let previewAtual = null;       // { celulas, ocorrencias } do jogo exibido
+let mostrarRespostas = false;  // por padrão, as respostas ficam desligadas
+
+const TAMANHO_CELULA = 32; // px. Igual em todas as dificuldades (o CSS usa o mesmo valor)
+
+// Desenha a grade e devolve as células (matriz de elementos) para podermos colori-las
 function renderizarMatriz(matriz) {
     const grid = document.getElementById("matriz-preview");
     grid.innerHTML = "";
-    matriz.forEach(linha => {
-        linha.forEach(letra => {
-            const div = document.createElement("div");
-            div.className = "matriz-cell";
-            div.innerText = letra;
-            grid.appendChild(div);
-        });
+    grid.style.gridTemplateColumns = `repeat(${matriz[0].length}, ${TAMANHO_CELULA}px)`; // colunas = largura da matriz
+    return matriz.map(linha => linha.map(letra => {
+        const div = document.createElement("div");
+        div.className = "matriz-cell";
+        div.innerText = letra;
+        grid.appendChild(div);
+        return div;
+    }));
+}
+
+// Procura a palavra na matriz (mesmas direções que o gerador usa em cada dificuldade).
+// A grade só tem letras A-Z, então a resposta é comparada sem acento e em maiúsculas.
+// Devolve uma lista de ocorrências; cada ocorrência é uma lista de [linha, coluna].
+function localizarPalavra(matriz, palavra, dificuldade) {
+    const alvo = removerAcentos(String(palavra)).toUpperCase();
+    const linhas = matriz.length, colunas = matriz[0].length;
+    const direcoes = [[0, 1], [1, 0]];
+    if (dificuldade !== "Fácil") direcoes.push([1, 1], [-1, -1], [0, -1], [-1, 0], [1, -1], [-1, 1]);
+
+    const achadas = [];
+    const vistas = new Set(); // evita contar a mesma posição duas vezes (ex.: palíndromos)
+    for (let r = 0; r < linhas; r++) {
+        for (let c = 0; c < colunas; c++) {
+            for (const [dl, dc] of direcoes) {
+                const fimL = r + dl * (alvo.length - 1);
+                const fimC = c + dc * (alvo.length - 1);
+                if (fimL < 0 || fimL >= linhas || fimC < 0 || fimC >= colunas) continue;
+                const cels = [];
+                let confere = true;
+                for (let k = 0; k < alvo.length; k++) {
+                    const rr = r + dl * k, cc = c + dc * k;
+                    if (matriz[rr][cc] !== alvo[k]) { confere = false; break; }
+                    cels.push([rr, cc]);
+                }
+                if (!confere) continue;
+                const chave = cels.map(([a, b]) => a * colunas + b).sort((x, y) => x - y).join(",");
+                if (!vistas.has(chave)) { vistas.add(chave); achadas.push(cels); }
+            }
+        }
+    }
+    return achadas;
+}
+
+// Cor clarinha e diferente para cada par (ângulo áureo espalha bem os tons)
+function corDoPar(i) {
+    return `hsl(${Math.round((i * 137.508) % 360)}, 80%, 82%)`;
+}
+
+function mostrarPreview(matriz, perguntas, dificuldade) {
+    const celulas = renderizarMatriz(matriz);
+    const ocorrencias = perguntas.map(pr => localizarPalavra(matriz, pr.resposta, dificuldade));
+    previewAtual = { celulas, ocorrencias };
+    mostrarRespostas = false;
+
+    const lista = document.getElementById("lista-perguntas-preview");
+    lista.innerHTML = "";
+    perguntas.forEach((pr, i) => {
+        // textContent (e não innerHTML) para o texto digitado nunca ser interpretado como HTML
+        const li = document.createElement("li");
+        const cor = document.createElement("span");
+        cor.className = "cor";
+        cor.style.backgroundColor = corDoPar(i);
+        const corpo = document.createElement("div");
+        const pergunta = document.createElement("div");
+        pergunta.textContent = `${i + 1}. ${pr.pergunta}`;
+        const resposta = document.createElement("div");
+        resposta.className = "resposta-par";
+        resposta.textContent = pr.resposta + (ocorrencias[i].length ? "" : " (não encontrada na grade)");
+        corpo.appendChild(pergunta);
+        corpo.appendChild(resposta);
+        li.appendChild(cor);
+        li.appendChild(corpo);
+        lista.appendChild(li);
+    });
+    lista.parentElement.scrollTop = 0;
+    document.getElementById("preview-layout").classList.remove("mostrando");
+    atualizarBotaoRespostas();
+    aplicarDestaques();
+}
+
+function alternarRespostas() {
+    mostrarRespostas = !mostrarRespostas;
+    document.getElementById("preview-layout").classList.toggle("mostrando", mostrarRespostas);
+    atualizarBotaoRespostas();
+    aplicarDestaques();
+}
+
+function atualizarBotaoRespostas() {
+    document.getElementById("btn-toggle-respostas").innerText =
+        mostrarRespostas ? "🙈 Ocultar respostas da grade" : "👁 Mostrar respostas na grade";
+}
+
+function aplicarDestaques() {
+    if (!previewAtual) return;
+    const { celulas, ocorrencias } = previewAtual;
+    celulas.forEach(linha => linha.forEach(el => { el.style.backgroundColor = ""; }));
+    if (!mostrarRespostas) return;
+    ocorrencias.forEach((lista, i) => {
+        const cor = corDoPar(i);
+        lista.forEach(cels => cels.forEach(([r, c]) => { celulas[r][c].style.backgroundColor = cor; }));
     });
 }
-
-function renderizarPreview(matriz, perguntas_respostas) {
-    // Renderiza a grade
-    const grid = document.getElementById("matriz-preview");
-    grid.innerHTML = "";
-    matriz.forEach(linha => {
-        linha.forEach(letra => {
-            const div = document.createElement("div");
-            div.className = "matriz-cell";
-            div.innerText = letra;
-            grid.appendChild(div);
-        });
-    }); 
-
-    // Renderiza a lista enumerada de dicas
-    const dicasList = document.getElementById("preview-dicas");
-    dicasList.innerHTML = perguntas_respostas.map(pr => `<li style="margin-bottom: 10px;">${pr.pergunta}</li>`).join("");
-}
-    

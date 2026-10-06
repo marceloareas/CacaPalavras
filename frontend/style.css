@@ -129,92 +129,68 @@ button:active {
     align-items: center;
 }
 
-/* Matriz do Jogo */
-.matriz-grid { 
-    display: grid; 
-    grid-template-columns: repeat(15, 1fr); 
-    gap: 3px; 
-    margin-top: 20px; 
-    background-color: #e9e0d4; 
-    padding: 10px; 
-    border-radius: 15px;
-    border: 2px solid #202020;
-}
-.matriz-cell { 
-    background-color: #f5f5ef; 
-    color: #202020; 
-    text-align: center; 
-    padding: 10px 5px; 
-    font-weight: bold; 
-    border-radius: 8px; 
-    border: 1px solid #202020;
-    font-family: monospace; 
-    font-size: 16px;
-}
+/* Lista de pares: o texto ocupa o espaço livre e os botões ficam sempre fixos à direita */
+.texto-par { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.list-acoes { display: flex; gap: 8px; flex: none; margin-left: 12px; }
+.list-item.em-edicao { background-color: #e9e0d4; border-style: dashed; }
 
-/* Tela de Preview */
-.preview-layout {
+/* Matriz do Jogo: células quadradas de tamanho fixo, iguais em todas as dificuldades.
+   O número de colunas é definido pelo JavaScript (renderizarMatriz). */
+.matriz-grid {
     display: grid;
-    grid-template-columns: 1fr auto 1fr; 
-    gap: 30px;
-    align-items: start;
-    width: 100%;
-}
-
-.preview-center {
-    grid-column: 2;
-    display: flex;
-    justify-content: center;
-}
-
-
-.matriz-grid { 
-    display: grid; 
-    grid-template-columns: repeat(15, 1fr); 
-    gap: 4px;
-    background-color: #e9e0d4; 
-    padding: 12px; 
-    border-radius: 15px;
-    border: 2px solid #202020;
-    width: 100%;
-    min-width: 500px;
-    aspect-ratio: 1 / 1;
-}
-
-.matriz-cell { 
-    background-color: #f5f5ef; 
-    color: #202020; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold; 
-    border-radius: 6px; 
-    border: 1px solid #202020;
-    font-family: monospace; 
-    font-size: 18px;
-    aspect-ratio: 1 / 1;
-}
-
-.dicas-lateral {
-    grid-column: 3; 
+    gap: 3px;
+    width: max-content; /* a grade nunca encolhe: o tamanho das células é fixo */
     background-color: #e9e0d4;
-    padding: 20px;
+    padding: 10px;
     border-radius: 15px;
     border: 2px solid #202020;
-    box-shadow: 4px 4px 0px #202020;
-    font-size: 13px; 
-    min-width: 250px;
 }
-
-.dicas-lateral h3 {
-    margin-top: 0;
+.matriz-cell {
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f5ef;
+    color: #202020;
+    font-weight: bold;
+    border-radius: 8px;
+    border: 1px solid #202020;
+    font-family: monospace;
     font-size: 16px;
-    text-align: center;
-    margin-bottom: 15px;
 }
 
-.dicas-lateral ol {
-    margin: 0;
-    padding-left: 20px;
-    line-height: 1.6;
+/* Tela de visualização: dicas à esquerda e grade à direita
+   (para inverter os lados, troque "row" por "row-reverse" em .preview-layout) */
+.container.wide { max-width: 1300px; }
+.preview-layout { display: flex; flex-direction: row; gap: 20px; align-items: flex-start; }
+.painel-perguntas {
+    flex: 0 0 300px;
+    max-height: 546px; /* mesma altura da grade (15 linhas) */
+    overflow-y: auto;
+    overscroll-behavior: contain; /* rolar dentro do painel não rola a página */
+    box-sizing: border-box;
+    background-color: #e9e0d4;
+    border: 2px solid #202020;
+    border-radius: 15px;
+    box-shadow: 4px 4px 0px #202020;
+    padding: 15px;
+    font-size: 13px;
+}
+.painel-perguntas h3 { margin: 0 0 12px; font-size: 16px; text-align: center; }
+.painel-perguntas ul { list-style: none; margin: 0; padding: 0; }
+.painel-perguntas li { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid #c9bfb1; line-height: 1.4; }
+.painel-perguntas li:last-child { border-bottom: none; }
+.painel-perguntas .cor { display: none; flex: none; width: 16px; height: 16px; margin-top: 2px; border-radius: 4px; border: 1px solid #202020; }
+.painel-perguntas .resposta-par { display: none; margin-top: 4px; font-family: monospace; font-size: 14px; font-weight: bold; }
+.preview-layout.mostrando .painel-perguntas .cor { display: block; }
+.preview-layout.mostrando .painel-perguntas .resposta-par { display: block; }
+.preview-grid-wrap { flex: 1; min-width: 0; overflow-x: auto; }
+
+/* Telas estreitas: dicas em cima, grade embaixo */
+@media (max-width: 900px) {
+    .preview-layout { flex-direction: column; }
+    .painel-perguntas { flex: none; width: 100%; max-height: 220px; }
+    .preview-grid-wrap { width: 100%; }
 }

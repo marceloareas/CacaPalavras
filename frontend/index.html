@@ -84,12 +84,15 @@
         <!-- PASSO 4 -->
         <div id="screen-step4" class="screen">
             <h2>Cadastro de Palavras e Dicas</h2>
-            <p style="text-align: center; margin-top: 0;">Cadastre de 10 a 25 palavras. Atuais: <span id="word-count" style="color: #202020; font-weight: bold;">0</span>/25</p>
+            <p style="text-align: center; margin-top: 0;">Cadastre de 10 a <span class="word-max">15</span> palavras. Atuais: <span id="word-count" style="color: #202020; font-weight: bold;">0</span>/<span class="word-max">15</span></p>
             
             <input type="text" id="input-pergunta" placeholder="Digite a Dica ou Pergunta" autocomplete="off">
             <input type="text" id="input-resposta" placeholder="Digite a Resposta (Uma única palavra)" autocomplete="off">
             
-            <button style="margin-bottom: 15px;" onclick="addWord()">Adicionar Par (OK) ✔</button>
+            <div class="btn-group" style="margin-bottom: 15px;">
+                <button id="btn-add-par" onclick="addWord()">Adicionar Par (OK) ✔</button>
+                <button id="btn-cancelar-edicao" class="btn-voltar" style="display: none;" onclick="cancelarEdicao()">Cancelar edição</button>
+            </div>
             <ul id="lista-palavras" class="list-container"></ul>
             
             <div class="btn-group" style="margin-top: 20px;">
@@ -101,15 +104,16 @@
         <!-- TELA DE PREVIEW (Para Criação e Visualização) -->
         <div id="screen-preview" class="screen">
             <h2 id="preview-title">Jogo Salvo com Sucesso!</h2>
-            
-            <div class="preview-layout">
-                <div></div> 
-                <div class="preview-center">
-                    <div id="matriz-preview" class="matriz-grid" style="margin-top: 0;"></div>
-                </div>
-                <div class="dicas-lateral">
+            <div style="display: flex; justify-content: center;">
+                <button id="btn-toggle-respostas" style="max-width: 400px; margin-bottom: 15px;" onclick="alternarRespostas()">👁 Mostrar respostas na grade</button>
+            </div>
+            <div id="preview-layout" class="preview-layout">
+                <aside class="painel-perguntas">
                     <h3>Dicas</h3>
-                    <ol id="preview-dicas"></ol>
+                    <ul id="lista-perguntas-preview"></ul>
+                </aside>
+                <div class="preview-grid-wrap">
+                    <div id="matriz-preview" class="matriz-grid"></div>
                 </div>
             </div>
             <div style="display: flex; justify-content: center;">
