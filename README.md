@@ -37,7 +37,72 @@ Obs: As partidas realizadas pelo professor têm finalidade de teste e visualiza�
 
 ## Tecnologias
 
-O projeto será desenvolvido como uma aplicação web e utilizará Docker para a configuração e execução do ambiente de desenvolvimento.
+Aplicação web em arquitetura cliente-servidor, executada com Docker (três containers na rede `wordhunt-net`):
+
+| Container | Tecnologia | Função |
+|---|---|---|
+| `wordhunt_frontend` | HTML, CSS e JavaScript servidos pelo Nginx | Interface do professor (e, futuramente, do aluno) |
+| `wordhunt_backend` | Python + FastAPI | API REST, regras de negócio e geração da grade |
+| `wordhunt_db` | PostgreSQL 15 | Persistência (volume `wordhunt_db_data`) |
+
+---
+
+## Como executar
+
+### Pré-requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) (Windows/Mac) ou Docker Engine com Compose (Linux). Ele precisa estar aberto e iniciado ("Engine running").
+- Git.
+
+### Passo a passo
+
+```bash
+git clone <url-do-repositorio>
+cd CacaPalavras-dev
+docker compose up --build
+```
+
+Quando os logs mostrarem `database system is ready to accept connections` e `Uvicorn running on http://0.0.0.0:8000`, o sistema está pronto:
+
+| Endereço | O que é |
+|---|---|
+| http://localhost | O jogo (interface) |
+| http://localhost:8000/docs | Documentação interativa da API (Swagger) |
+
+Para parar: `Ctrl+C` no terminal (ou `docker compose down`). Os jogos criados continuam salvos no volume do banco. Para subir novamente: `docker compose up`.
+
+### Usuários de teste
+
+O login ainda é simulado (a integração com a plataforma Lúdica virá em uma próxima etapa). A tela inicial lista os usuários cadastrados em `init.sql`: Prof. João (professor) e Aluno Maria (aluno). Por enquanto, apenas o fluxo do professor está disponível.
+
+### Atualizar uma versão anterior / recriar o banco do zero
+
+Depois de um `git pull`, use:
+
+```bash
+docker compose down -v
+docker compose up --build
+```
+
+- `--build` reconstrói o backend (necessário quando o `main.py` muda).
+- `-v` apaga o volume do banco e recria as tabelas a partir do `init.sql`. Use quando o `init.sql` ou o `docker-compose.yml` mudarem, ou para voltar ao banco limpo. **Todos os jogos salvos localmente serão perdidos**.
+- Mudanças só em `frontend/` não exigem rebuild: basta recarregar a página (`Ctrl+F5`).
+
+## Regras do jogo (visão do professor)
+
+- Cada caça-palavras tem disciplina, assunto e dificuldade, e entre 10 e 25 pares pergunta-resposta (o máximo depende da dificuldade).
+- Cada resposta é uma única palavra, com até 15 letras, sem espaços ou números. Acentos são aceitos (a grade os exibe sem acento).
+- A grade é gerada automaticamente pelo sistema, o professor não escolhe as posições.
+
+| Dificuldade | Grade (linhas x colunas) | Máximo de palavras | Direções das palavras |
+|---|---|---|---|
+| Fácil | 15 x 17 | 15 | direita e baixo |
+| Médio | 15 x 21 | 20 | 8 direções |
+| Difícil | 15 x 25 | 25 | 8 direções |
+
+Se as palavras não couberem na grade (por exemplo, muitas palavras longas no nível Difícil), o sistema avisa e o professor pode remover ou encurtar alguma palavra.
+
+Ao visualizar um jogo, o professor vê a lista de perguntas ao lado da grade e pode mostrar ou ocultar a posição das respostas (cada palavra em uma cor).
 
 ---
 
