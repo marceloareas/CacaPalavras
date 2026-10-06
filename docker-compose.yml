@@ -9,7 +9,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      - wordhunt_db_data:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - wordhunt-net
 
   backend:
     build: ./backend
@@ -20,6 +23,8 @@ services:
       - db
     environment:
       DATABASE_URL: postgresql://admin:adminpassword@db:5432/wordhunt
+    networks:
+      - wordhunt-net
 
   frontend:
     image: nginx:alpine
@@ -30,3 +35,12 @@ services:
       - ./frontend:/usr/share/nginx/html
     depends_on:
       - backend
+    networks:
+      - wordhunt-net
+
+networks:
+  wordhunt-net:
+    driver: bridge
+
+volumes:
+  wordhunt_db_data:
