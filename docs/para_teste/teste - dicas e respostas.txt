@@ -1,0 +1,164 @@
+WORDHUNT - DICAS E RESPOSTAS PARA TESTAR:
+
+------------------------------------------------------------------------------------------------
+Disciplina: Banco de Dados | Assunto: Modelagem e SQL | Dificuldade: Difícil
+
+Dica: Estrutura fundamental que armazena dados em linhas e colunas. | Resposta: Tabela
+
+Dica: Representa um atributo específico verticalmente na tabela. | Resposta: Coluna
+
+Dica: Representa um registro único horizontalmente na tabela. | Resposta: Linha
+
+Dica: Sinônimo técnico para um dado inserido em um banco relacional. | Resposta: Registro
+
+Dica: Propriedade ou característica que descreve uma entidade. | Resposta: Atributo
+
+Dica: Objeto ou conceito do mundo real mapeado para o banco. | Resposta: Entidade
+
+Dica: Associação estabelecida entre duas ou mais entidades. | Resposta: Relação
+
+Dica: Identificador único usado para buscar ou vincular dados. | Resposta: Chave
+
+Dica: Tipo de chave que identifica um registro de forma exclusiva (Primary). | Resposta: Primária
+
+Dica: Tipo de chave que cria vínculo de dependência entre tabelas (Foreign). | Resposta: Estrangeira
+
+Dica: Estrutura de dados que melhora incrivelmente a velocidade de busca. | Resposta: Índice
+
+Dica: Termo em português para uma requisição de dados ao banco (Query). | Resposta: Consulta
+
+Dica: Comando SQL utilizado para recuperar e listar dados. | Resposta: Select
+
+Dica: Comando SQL utilizado para adicionar um novo registro. | Resposta: Insert
+
+Dica: Comando SQL utilizado para modificar ou atualizar dados existentes. | Resposta: Update
+
+Dica: Comando SQL utilizado para excluir registros da tabela. | Resposta: Delete
+
+Dica: Comando utilizado para confirmar e salvar uma transação com sucesso. | Resposta: Commit
+
+Dica: Comando que cancela uma transação e desfaz as alterações. | Resposta: Rollback
+
+Dica: Processo de organização de tabelas para evitar redundância de dados. | Resposta: Normalização
+
+Dica: Procedimento de banco que é disparado automaticamente (Trigger). | Resposta: Gatilho
+
+Dica: Tabela virtual gerada dinamicamente com base em uma consulta (View). | Resposta: Visão
+
+Dica: Organização ou estrutura lógica de um banco de dados (Schema). | Resposta: Esquema
+
+Dica: Regra aplicada a uma coluna para garantir a integridade dos dados (Constraint). | Resposta: Restrição
+
+Dica: Modelo mais comum de banco de dados baseado em tabelas e chaves. | Resposta: Relacional
+
+Dica: Operação em português utilizada para unir duas tabelas (Join). | Resposta: Junção
+
+
+------------------------------------------------------------------------------------------------
+Disciplina: Química | Assunto: Elementos Químicos | Dificuldade: Médio
+
+Dica: Gás fundamental para a respiração dos seres humanos. | Resposta: Oxigênio
+
+Dica: Elemento químico mais leve e abundante em todo o universo. | Resposta: Hidrogênio
+
+Dica: Elemento central que forma a base da química orgânica. | Resposta: Carbono
+
+Dica: Gás mais abundante na atmosfera terrestre. | Resposta: Nitrogênio
+
+Dica: Gás nobre muito leve utilizado para encher balões flutuantes. | Resposta: Hélio
+
+Dica: Metal altamente reativo presente no sal de cozinha. | Resposta: Sódio
+
+Dica: Metal leve amplamente utilizado em baterias de celular. | Resposta: Lítio
+
+Dica: Mineral essencial encontrado no leite, importante para os ossos. | Resposta: Cálcio
+
+Dica: Íon de símbolo K importante para a contração muscular. | Resposta: Potássio
+
+Dica: Metal de transição presente na hemoglobina do nosso sangue. | Resposta: Ferro
+
+Dica: Excelente metal condutor de cor avermelhada usado em fios. | Resposta: Cobre
+
+Dica: Metal precioso muito usado em joias de símbolo Ag. | Resposta: Prata
+
+Dica: Metal nobre e valioso de coloração amarela de símbolo Au. | Resposta: Ouro
+
+Dica: Único metal que se apresenta em estado líquido na natureza. | Resposta: Mercúrio
+
+Dica: Metal pesado e tóxico muito utilizado em baterias de carro. | Resposta: Chumbo
+
+Dica: Elemento radioativo que serve de combustível em usinas nucleares. | Resposta: Urânio
+
+Dica: Halogênio adicionado à água e pastas de dente contra cáries. | Resposta: Flúor
+
+Dica: Gás de cheiro forte usado no tratamento de água de piscinas. | Resposta: Cloro
+
+Dica: Halogênio arroxeado usado em ferimentos como antisséptico. | Resposta: Iodo
+
+Dica: Gás nobre popularmente utilizado em letreiros coloridos. | Resposta: Neônio
+
+
+------------------------------------------------------------------------------------------------
+
+Disciplina: Biologia | Assunto: Organelas Celulares | Dificuldade: Fácil
+
+Dica: Estrutura que controla o que entra e sai da célula. | Resposta: Membrana
+
+Dica: Centro de comando que abriga o material genético. | Resposta: Núcleo
+
+Dica: Fluido gelatinoso onde as organelas estão mergulhadas. | Resposta: Citoplasma
+
+Dica: Organela responsável pela respiração e energia celular. | Resposta: Mitocôndria
+
+Dica: Estrutura responsável por sintetizar proteínas. | Resposta: Ribossomo
+
+Dica: Envoltório que protege o núcleo celular. | Resposta: Carioteca
+
+Dica: Responsável pela digestão intracelular. | Resposta: Lisossomo
+
+Dica: Organela que realiza a fotossíntese nas plantas. | Resposta: Cloroplasto
+
+Dica: Bolsa que armazena água, muito grande em plantas. | Resposta: Vacúolo
+
+Dica: Estrutura cilíndrica que atua na divisão celular animal. | Resposta: Centríolo
+
+Dica: Estrutura curta em formato de pelo usada para locomoção. | Resposta: Cílios
+
+Dica: Cauda longa usada para locomoção, comum em espermatozoides. | Resposta: Flagelo
+
+Dica: Região densa dentro do núcleo que fabrica ribossomos. | Resposta: Nucléolo
+
+Dica: Estrutura espiralada em forma de X composta por DNA. | Resposta: Cromossomo
+
+Dica: Anel de DNA extra encontrado em bactérias. | Resposta: Plasmídio
+
+
+------------------------------------------------------------------------------------------------
+
+Disciplina: Química | Assunto: Estrutura Atômica e Elementos | Dificuldade: Fácil
+
+Dica: Partícula de carga positiva no núcleo do átomo. | Resposta: Próton
+
+Dica: Partícula de carga negativa ao redor do núcleo. | Resposta: Elétron
+
+Dica: Partícula sem carga elétrica no núcleo do átomo. | Resposta: Nêutron
+
+Dica: Elemento central que forma a base da química orgânica. | Resposta: Carbono
+
+Dica: Gás nobre frequentemente utilizado em letreiros luminosos. | Resposta: Neônio
+
+Dica: Único metal que se apresenta em estado líquido à temperatura ambiente. | Resposta: Mercúrio
+
+Dica: Substância aquosa que apresenta pH menor do que 7. | Resposta: Ácido
+
+Dica: Mistura homogênea composta por um soluto e um solvente. | Resposta: Solução
+
+Dica: Ligação química caracterizada pelo compartilhamento de elétrons. | Resposta: Covalente
+
+Dica: Gás reativo essencial para o processo de respiração celular. | Resposta: Oxigênio
+
+Dica: Elemento químico mais leve e abundante em todo o universo. | Resposta: Hidrogênio
+
+Dica: Região central, densa e muito pequena de um átomo. | Resposta: Núcleo
+
+------------------------------------------------------------------------------------------------
