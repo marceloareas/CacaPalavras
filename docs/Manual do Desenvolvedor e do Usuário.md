@@ -208,4 +208,43 @@ O `login()` guarda o id do usuário escolhido; se a opção contém "Professor",
 | Mínimo de palavras (10) | `MIN_PALAVRAS` | número fixo em `salvarJogo()` e no `index.html` |
 | Direções das palavras | `_tentar_gerar` | `localizarPalavra` |
 
-Se mudar o número de linhas da grade, ajuste também a altura do painel de dicas no CSS (`.painel-perguntas`, 546px, calculada para 15 linhas).
+## 9. Fluxo: professor cria um caça-palavras
+
+```mermaid
+sequenceDiagram
+    actor P as Professor
+    participant F as Frontend (script.js)
+    participant B as Backend (FastAPI)
+    participant D as PostgreSQL
+
+    P->>F: "Criar Novo Caça-Palavras"
+    F->>B: GET /api/disciplinas
+    B->>D: SELECT DISTINCT disciplina
+    D-->>B: lista
+    B-->>F: disciplinas (autocomplete)
+
+    P->>F: Preenche disciplina e avança
+    F->>B: GET /api/assuntos/disciplina
+    B->>D: SELECT DISTINCT assunto
+    D-->>B: lista
+    B-->>F: assuntos (autocomplete)
+
+    P->>F: Escolhe assunto e dificuldade
+    loop Para cada par dica/resposta
+        P->>F: Adicionar Par
+        F->>F: Valida (letras, sem espaço, até 15, limite do nível)
+    end
+
+    P->>F: "Salvar Jogo!"
+    F->>B: POST /api/jogos
+    B->>B: validar_jogo() e gerar_matriz()
+    alt Validação ou geração falhou
+        B-->>F: 400 com detail
+        F-->>P: alert("Erro ao salvar: ...")
+    else Deu certo
+        B->>D: INSERT INTO Caca_Palavras
+        D-->>B: id_jogo (ou erro, ex.: UNIQUE)
+        B-->>F: id_jogo e matriz (ou 400)
+        F-->>P: Tela de preview
+    end
+```
