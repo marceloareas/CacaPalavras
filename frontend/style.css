@@ -56,32 +56,68 @@ input, select {
 }
 input:focus, select:focus { outline: none; border-color: #202020; }
 
-/* Estilização do Dropdown/Autocomplete Customizado */
+/* Estilização do Dropdown/Autocomplete */
 .autocomplete-list {
     position: absolute;
-    top: 65px;
+    top: 80px;
     left: 0;
     right: 0;
-    background-color: #f3ece4;
+    background-color: #f5f5ef;
     border: 2px solid #202020;
-    border-radius: 15px;
-    max-height: 150px;
+    border-radius: 16px;
+    max-height: 240px;
     overflow-y: auto;
     z-index: 1000;
     display: none;
-    padding: 5px;
+    padding: 10px;
+    box-shadow: 8px 8px 0px rgba(32, 32, 32, 0.85); 
+}
+
+.sugestao-item {
+    background-color: #e9e0d4;
+    border: 2px solid #202020;
+    min-height: 55px;
+    padding: 0 20px !important;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 16px;
+    color: #202020;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    transition: all 0.15s ease-in-out;
+}
+
+.sugestao-item:last-child {
+    margin-bottom: 0;
+}
+
+.sugestao-item:hover {
+    background-color: #f3ece4;
+    transform: translate(-3px, -3px);
     box-shadow: 4px 4px 0px #202020;
 }
-.autocomplete-item {
-    background-color: transparent;
-    border: none;
-    padding: 12px;
-    margin: 2px 0;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 600;
+
+.sugestao-item::after {
+    content: "Selecionar ➔";
+    font-size: 14px;
+    font-weight: bold;
+    color: #f5f5ef;
+    background-color: #202020;
+    padding: 6px 14px;
+    border-radius: 8px;
+    opacity: 0; 
+    transform: translateX(-10px);
+    transition: all 0.2s ease-in-out;
 }
-.autocomplete-item:hover { background-color: #e9e0d4; }
+
+.sugestao-item:hover::after {
+    opacity: 1;
+    transform: translateX(0);
+}
 
 /* Remove visual feio nativo do select */
 select {

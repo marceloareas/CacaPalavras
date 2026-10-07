@@ -45,9 +45,16 @@
         <div id="screen-step1" class="screen">
             <h2>Escolha ou Crie a Disciplina</h2>
             <div class="input-container">
-                <input type="text" id="input-disciplina" placeholder="Ex: Química" autocomplete="off" oninput="filtrarDropdown('disciplina')" onfocus="filtrarDropdown('disciplina')">
-                <ul id="dropdown-disciplina" class="autocomplete-list list-container"></ul>
+                <input type="text" id="input-disciplina" placeholder="Ex: Química" autocomplete="off" oninput="filtrarDropdown('disciplina')">
+                <ul id="dropdown-disciplina" class="autocomplete-list list-container" style="display: none;"></ul>
             </div>
+            
+            <div id="disciplinas-existentes-container" style="display: none; margin-bottom: 20px;">
+                <h3 style="font-size: 14px; color: #202020; margin-bottom: 10px;">Disciplinas já cadastradas:</h3>
+                <ul id="lista-disciplinas-existentes" style="max-height: 200px; overflow-y: auto; padding: 5px; margin: 0; list-style: none;">
+                </ul>
+            </div>
+
             <div class="btn-group">
                 <button class="btn-voltar" onclick="voltarAoMenu()">⬅ Cancelar</button>
                 <button onclick="goToStep(2)">Avançar ➔</button>
@@ -58,9 +65,16 @@
         <div id="screen-step2" class="screen">
             <h2>Escolha ou Crie o Assunto</h2>
             <div class="input-container">
-                <input type="text" id="input-assunto" placeholder="Ex: Estrutura Atômica" autocomplete="off" oninput="filtrarDropdown('assunto')" onfocus="filtrarDropdown('assunto')">
-                <ul id="dropdown-assunto" class="autocomplete-list list-container"></ul>
+                <input type="text" id="input-assunto" placeholder="Ex: Estrutura Atômica" autocomplete="off" oninput="filtrarDropdown('assunto')">
+                <ul id="dropdown-assunto" class="autocomplete-list list-container" style="display: none;"></ul>
             </div>
+            
+            <div id="assuntos-existentes-container" style="display: none; margin-bottom: 20px;">
+                <h3 style="font-size: 14px; color: #202020; margin-bottom: 10px;">Assuntos já cadastrados nesta disciplina:</h3>
+                <ul id="lista-assuntos-existentes" style="max-height: 200px; overflow-y: auto; padding: 5px; margin: 0; list-style: none;">
+                </ul>
+            </div>
+
             <div class="btn-group">
                 <button class="btn-voltar" onclick="goToStep(1)">⬅ Voltar</button>
                 <button onclick="goToStep(3)">Avançar ➔</button>

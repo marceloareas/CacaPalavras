@@ -63,11 +63,12 @@ async function iniciarCriacao() {
     document.getElementById("input-disciplina").value = "";
     document.getElementById("input-assunto").value = "";
     document.getElementById("select-dificuldade").value = "Fácil";
-    cancelarEdicao(); // sai do modo de edição de par e atualiza a lista
+    cancelarEdicao(); 
     
     const res = await fetch(`${API_URL}/disciplinas`);
     disciplinasSalvas = await res.json();
     
+    renderizarListaExistentes('disciplina', disciplinasSalvas);
     goToStep(1);
 }
 
@@ -75,24 +76,32 @@ async function iniciarCriacao() {
 function filtrarDropdown(tipo) {
     const input = document.getElementById(`input-${tipo}`);
     const dropdown = document.getElementById(`dropdown-${tipo}`);
-    const termo = input.value.toLowerCase();
+    const termo = input.value.toLowerCase().trim();
     
     const dados = tipo === 'disciplina' ? disciplinasSalvas : assuntosSalvos;
-    const filtrados = dados.filter(d => d.toLowerCase().includes(termo));
     
-    dropdown.innerHTML = "";
-    if (filtrados.length > 0) {
-        dropdown.style.display = "block";
-        filtrados.forEach(item => {
-            const li = document.createElement("li");
-            li.className = "list-item autocomplete-item";
-            li.innerText = item;
-            li.onclick = () => {
-                input.value = item;
-                dropdown.style.display = "none";
-            };
-            dropdown.appendChild(li);
-        });
+    // só exibe o balão de sugestão se houver texto digitado e encontrar semelhanças
+    if (termo.length > 0) {
+        const filtrados = dados.filter(d => d.toLowerCase().includes(termo));
+        dropdown.innerHTML = "";
+        
+        if (filtrados.length > 0) {
+            dropdown.style.display = "block";
+            filtrados.forEach(item => {
+                const li = document.createElement("li");
+                li.className = "sugestao-item";
+                li.innerText = item;
+                li.onclick = () => {
+                    input.value = item;
+                    dropdown.style.display = "none";
+                    if (tipo === 'disciplina') goToStep(2);
+                    if (tipo === 'assunto') goToStep(3);
+                };
+                dropdown.appendChild(li);
+            });
+        } else {
+            dropdown.style.display = "none";
+        }
     } else {
         dropdown.style.display = "none";
     }
@@ -148,12 +157,40 @@ async function editarJogo(id_jogo) {
         document.getElementById("input-disciplina").value = gameData.disciplina;
         document.getElementById("input-assunto").value = gameData.assunto;
         document.getElementById("select-dificuldade").value = gameData.dificuldade;
-        cancelarEdicao(); // sai do modo de edição de par e atualiza a lista
+        cancelarEdicao(); 
         
         const resDisc = await fetch(`${API_URL}/disciplinas`);
         disciplinasSalvas = await resDisc.json();
         
+        renderizarListaExistentes('disciplina', disciplinasSalvas);
         goToStep(1);
+    }
+}
+
+function renderizarListaExistentes(tipo, dados) {
+    const container = document.getElementById(`${tipo}s-existentes-container`);
+    const lista = document.getElementById(`lista-${tipo}s-existentes`);
+    lista.innerHTML = "";
+
+    if (dados && dados.length > 0) {
+        container.style.display = "block";
+        dados.forEach(item => {
+            const li = document.createElement("li");
+            
+            // USANDO A CLASSE SUGESTAO-ITEM PARA TER O MESMO VISUAL E HOVER DO DROPDOWN
+            li.className = "sugestao-item"; 
+            li.innerText = item;
+            
+            li.onclick = () => {
+                document.getElementById(`input-${tipo}`).value = item;
+                // avançar automaticamente após selecionar
+                if (tipo === 'disciplina') goToStep(2);
+                if (tipo === 'assunto') goToStep(3);
+            };
+            lista.appendChild(li);
+        });
+    } else {
+        container.style.display = "none";
     }
 }
 
@@ -162,31 +199,28 @@ async function goToStep(step) {
         const digitado = document.getElementById("input-disciplina").value.trim();
         if(!digitado) return alert("Por favor, preencha a disciplina.");
         
-        // Verifica duplicidade ignorando maiúsculas/minúsculas
         const existente = disciplinasSalvas.find(d => d.toLowerCase() === digitado.toLowerCase());
         
         if (existente && digitado !== existente) {
-            alert(`A disciplina "${existente}" já existe no sistema. Ela foi selecionada automaticamente para evitar duplicações.`);
             document.getElementById("input-disciplina").value = existente;
             gameData.disciplina = existente;
         } else {
             gameData.disciplina = existente || digitado;
         }
         
-        // Busca assuntos globais da disciplina selecionada
         const res = await fetch(`${API_URL}/assuntos/${encodeURIComponent(gameData.disciplina)}`);
         assuntosSalvos = await res.json();
+        
+        renderizarListaExistentes('assunto', assuntosSalvos);
     }
     
     if (step === 3) {
         const digitadoAssunto = document.getElementById("input-assunto").value.trim();
         if(!digitadoAssunto) return alert("Por favor, preencha o assunto.");
 
-        // Verifica duplicidade de assunto ignorando maiúsculas/minúsculas
         const existenteAssunto = assuntosSalvos.find(a => a.toLowerCase() === digitadoAssunto.toLowerCase());
         
         if (existenteAssunto && digitadoAssunto !== existenteAssunto) {
-            alert(`O assunto "${existenteAssunto}" já existe nesta disciplina. Ele foi selecionado automaticamente para evitar duplicações.`);
             document.getElementById("input-assunto").value = existenteAssunto;
             gameData.assunto = existenteAssunto;
         } else {
@@ -197,16 +231,38 @@ async function goToStep(step) {
     if (step === 4) {
         gameData.dificuldade = document.getElementById("select-dificuldade").value;
         atualizarListaPalavrasUI(); // atualiza o limite mostrado na tela
+        
+        // aviso (para troca de dificuldade de uma dificuldade maior que permitia mais palavras)
+        const max = LIMITES[gameData.dificuldade];
+        const qtdAtual = gameData.perguntas_respostas.length;
+        
+        if (qtdAtual > max) {
+            const excesso = qtdAtual - max;
+            alert(`ATENÇÃO: A dificuldade ${gameData.dificuldade} permite no máximo ${max} palavras, mas seu jogo atual tem ${qtdAtual}.\n\nPara conseguir salvar, você deverá remover ${excesso} palavra(s) da lista ou voltar e aumentar a dificuldade.`);
+        }
     }
 
     showScreen(`screen-step${step}`);
     updateProgressBar(step);
+
 }
 
 function atualizarListaPalavrasUI() {
-    document.getElementById("word-count").innerText = gameData.perguntas_respostas.length;
+    const qtdAtual = gameData.perguntas_respostas.length;
     const max = LIMITES[gameData.dificuldade];
+    
+    const countSpan = document.getElementById("word-count");
+    countSpan.innerText = qtdAtual;
+    
+    // deixa o contador vermelho se estiver com excesso de palavras
+    if (qtdAtual > max) {
+        countSpan.style.color = "#e74c3c";
+    } else {
+        countSpan.style.color = "#202020";
+    }
+    
     document.querySelectorAll(".word-max").forEach(el => el.innerText = max);
+    
     const ul = document.getElementById("lista-palavras");
     ul.innerHTML = "";
     gameData.perguntas_respostas.forEach((pr, index) => {
@@ -215,8 +271,8 @@ function atualizarListaPalavrasUI() {
         li.innerHTML = `
             <span class="texto-par"><b>Dica:</b> ${pr.pergunta} <br><b>Resp:</b> ${pr.resposta}</span> 
             <div class="list-acoes">
-                <button onclick="editarPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #3498db; color: white; border-radius: 10px; box-shadow: none;">✎</button>
-                <button onclick="removerPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #e74c3c; color: white; border-radius: 10px; box-shadow: none;">X</button>
+                <button onclick="editarPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #3498db; color: #f5f5ef; border-radius: 10px; box-shadow: none;">✎</button>
+                <button onclick="removerPalavra(${index})" style="flex: none; padding: 8px 12px; background-color: #e74c3c; color: #f5f5ef; border-radius: 10px; box-shadow: none;">X</button>
             </div>
         `;
         ul.appendChild(li);
@@ -388,7 +444,6 @@ function localizarPalavra(matriz, palavra, dificuldade) {
     return achadas;
 }
 
-// Cor clarinha e diferente para cada par (ângulo áureo espalha bem os tons)
 function corDoPar(i) {
     return `hsl(${Math.round((i * 137.508) % 360)}, 80%, 82%)`;
 }
@@ -402,7 +457,6 @@ function mostrarPreview(matriz, perguntas, dificuldade) {
     const lista = document.getElementById("lista-perguntas-preview");
     lista.innerHTML = "";
     perguntas.forEach((pr, i) => {
-        // textContent (e não innerHTML) para o texto digitado nunca ser interpretado como HTML
         const li = document.createElement("li");
         const cor = document.createElement("span");
         cor.className = "cor";
