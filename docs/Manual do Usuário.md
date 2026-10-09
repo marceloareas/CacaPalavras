@@ -85,5 +85,6 @@ Pelo protótipo de telas, o fluxo planejado é: **Jogar!** → escolher **matér
 | RN07 | Não pode haver disciplinas nem assuntos com nome igual | Implementado na tela (ignora maiúsculas/minúsculas) |
 | RN08 | No fácil, sem palavras na diagonal ou de trás pra frente | Implementado |
 | RN09 | Mínimo de 10 e máximo de 25 palavras | Implementado, com o máximo variando por nível (15, 20 ou 25) |
+| RN10 | Máximo de 15 letras por palavra | Implementado |
 
 **Casos de uso:** UC-01 Manter Caça-Palavras e UC-02 Visualizar Meus Caça-Palavras (Professor) estão disponíveis; UC-03 Selecionar Jogo, UC-04 Jogar Caça-Palavras e UC-05 Visualizar Perfil e Histórico (Aluno) ainda não.
