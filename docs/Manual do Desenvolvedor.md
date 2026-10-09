@@ -1,5 +1,4 @@
-# WordHunt: Manual do Desenvolvedor e do Usuário
-
+# WordHunt: Manual do Desenvolvedor
 Projeto da disciplina **Projeto e Construção de Sistemas** (CEFET/RJ).
 Equipe: Clara Ribeiro Barreto, Julia Iacovellis Pinho e Kaio da Silva dos Santos.
 
