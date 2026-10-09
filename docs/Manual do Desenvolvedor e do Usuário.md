@@ -249,7 +249,8 @@ sequenceDiagram
     end
 ```
 
-**Casos de uso:** o grupo já tem o diagrama no Astah (`Diagrama_de_Casos_de_Uso_-_WordHunt.pdf`); vale exportar como imagem e colocar aqui. Resumo: o **Aluno** seleciona jogo (extensões: modo aleatório, filtrar por dificuldade, filtrar por tema), visualiza perfil e histórico, joga e se autentica; o **Professor** mantém caça-palavras, se autentica e joga; a **Lúdica** (externa) se liga à autenticação.
+[Diagrama de Casos de Uso - WordHunt.pdf](https://github.com/user-attachments/files/33258373/Diagrama.de.Casos.de.Uso.-.WordHunt.pdf)
+Resumo: o **Aluno** seleciona jogo (extensões: modo aleatório, filtrar por dificuldade, filtrar por tema), visualiza perfil e histórico, joga e se autentica; o **Professor** mantém caça-palavras, se autentica e joga; a **Lúdica** (externa) se liga à autenticação.
 
 ## 10. Deploy
 
