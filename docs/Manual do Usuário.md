@@ -66,3 +66,24 @@ Lista os jogos que você criou (mais novos primeiro). Em cada um:
 | "O sistema exige no mínimo 10 palavras cadastradas!" | Cadastrar mais pares |
 | "Erro ao salvar: Não coube na grade…" | Remover ou encurtar alguma palavra |
 | "Erro ao salvar: …Verifique se o assunto já existe para esta disciplina." | Provavelmente já existe um jogo com a mesma disciplina, assunto e dificuldade. Tem que mudar um dos três |
+
+## 4. Guia do Aluno (previsto)
+
+Pelo protótipo de telas, o fluxo planejado é: **Jogar!** → escolher **matéria** → **assunto** → **dificuldade** → jogar, vendo a lista de perguntas, a grade e um **Score**. Previsto também: filtros e modo aleatório (RN05), associar a palavra encontrada à pergunta certa, com perda de pontos em associação errada (RN02), e consultar perfil e histórico (RN06).
+
+
+## 5. Regras de negócio
+
+| ID | Regra | Situação |
+|---|---|---|
+| RN01 | Perfis Professor e Aluno; acesso temporário por seleção de usuários fictícios até integrar com a Lúdica | Parcial (login simulado funciona; Lúdica não) |
+| RN02 | Aluno só pontua se achar a palavra **e** ligar à dica correta; associação errada tira pontos | Não implementado |
+| RN03 | Grade gerada automaticamente, com letras aleatórias nos espaços vazios | Implementado |
+| RN04 | Professor define disciplina, assunto, dificuldade, dicas e palavras | Implementado |
+| RN05 | Aluno filtra por professor, disciplina e assunto; existe modo aleatório | Não implementado |
+| RN06 | Pontuação de cada partida é guardada; aluno vê perfil e histórico | Não implementado (tabela já existe) |
+| RN07 | Não pode haver disciplinas nem assuntos com nome igual | Implementado na tela (ignora maiúsculas/minúsculas) |
+| RN08 | No fácil, sem palavras na diagonal ou de trás pra frente | Implementado |
+| RN09 | Mínimo de 10 e máximo de 25 palavras | Implementado, com o máximo variando por nível (15, 20 ou 25) |
+
+**Casos de uso:** UC-01 Manter Caça-Palavras e UC-02 Visualizar Meus Caça-Palavras (Professor) estão disponíveis; UC-03 Selecionar Jogo, UC-04 Jogar Caça-Palavras e UC-05 Visualizar Perfil e Histórico (Aluno) ainda não.
