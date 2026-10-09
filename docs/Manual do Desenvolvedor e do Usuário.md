@@ -9,7 +9,7 @@ O WordHunt está **em desenvolvimento**. Hoje funciona de ponta a ponta o **lado
 
 ---
 
-# Parte 1: Manual do Desenvolvedor
+# Manual do Desenvolvedor
 
 ## 1. Visão geral
 
@@ -263,52 +263,13 @@ Se for subir em outro lugar: o `API_URL` está fixo em `localhost`, as credencia
 
 **Ainda não implementado:** área do aluno (o login mostra "Área do aluno ainda em desenvolvimento!"); jogar o caça-palavras (inclusive o professor testar); pontuação e gravação em `Partida_Historico`; perfil e histórico; filtros e modo aleatório; integração com a Lúdica (hoje o login é a lista de usuários do `init.sql`).
 
-**Diferenças entre protótipo e sistema:** no protótipo, "Criar nova matéria" tem nome e **descrição** e há uma tela própria para assunto; no sistema, disciplina e assunto são digitados num campo com autocomplete e **não há descrição** nem tabela própria. Os botões do menu do professor também são diferentes ("Jogar!/Criar!" no protótipo; "Visualizar Meus Caça-Palavras/Criar Novo" no sistema).
-
 **Divergências nos documentos:**
-- **RN09** diz máximo de 25 palavras; o sistema limita por dificuldade (15, 20 ou 25).
-- **RN05** fala em filtrar por professor, disciplina e assunto; o diagrama de casos de uso mostra filtrar por dificuldade e por tema.
-- **UC-02** está na lista de casos de uso mas não aparece no diagrama desenhado.
-- A **pontuação** (valor de acerto e erro) não está definida. O protótipo mostra "Score: 5" e "Score: -5" só como exemplo.
+> Obs: Algumas regras foram alteradas durante o desenvolvimento do trabalho
+- **RN09** diz máximo de 25 palavras. Hoje o sistema limita por dificuldade (15, 20 ou 25).
+- **RN05** fala em filtrar por professor, disciplina e assunto. O diagrama de casos de uso mostra filtrar por dificuldade e por tema.
+- **UC-02** está na lista de casos de uso mas não no diagrama desenhado.
+- A **pontuação** (valor de acerto e erro) não está definida. O protótipo mostramos "Score: 5" e "Score: -5" só como exemplo.
 
-**A melhorar:** a API não tem autenticação (qualquer requisição altera ou exclui qualquer jogo); a **RN07** é checada só no frontend (ignorando maiúsculas/minúsculas), e o banco só impede repetir a trinca exata disciplina + assunto + dificuldade; a mensagem de erro de banco ao salvar é genérica e fala só em "assunto já existe".
+**A melhorar:** a API não tem autenticação (qualquer requisição altera ou exclui qualquer jogo); a **RN07** é checada só no frontend (ignorando maiúsculas/minúsculas), e o banco só impede repetir a trinca exata disciplina + assunto + dificuldade.
 
 ---
-
-# Parte 2: Manual do Usuário
-
-## 1. O que é
-
-O WordHunt é um caça-palavras educativo. O professor monta o jogo com **dicas** e **respostas** (uma palavra cada) e o sistema espalha as respostas numa grade. A proposta é o aluno achar as palavras e ligar cada uma à pergunta certa.
-
-| Perfil | O que pode fazer |
-|---|---|
-| **Professor** | Criar, editar, excluir e visualizar caça-palavras; definir disciplina, assunto e dificuldade; (previsto) jogar pra testar |
-| **Aluno** | (previsto) Filtrar e selecionar jogos, usar o modo aleatório, jogar, pontuar e consultar perfil e histórico |
-
-> Obs: **Hoje só o fluxo do professor está disponível.** Se entrar como aluno, o sistema avisa que a área está em desenvolvimento. As partidas do professor serão só de teste: não contam pontos de aluno nem vão para a Lúdica.
-
-## 2. Como acessar
-
-Abra **http://localhost** (com o sistema rodando), escolha um usuário na lista e clique em **Entrar no Sistema**. O login é **simulado**: aparecem usuários de teste ("Prof. João" e "Aluno Maria"). A integração com a Lúdica virá depois.
-
-## 3. Guia do Professor
-
-O **Painel do Professor** tem: **Visualizar Meus Caça-Palavras**, **Criar Novo Caça-Palavras** e **Sair da Conta**.
-
-### Criar um caça-palavras (4 passos, com barra de progresso)
-
-1. **Disciplina:** digite ou escolha uma sugestão. Se digitar uma que já existe mudando só maiúsculas/minúsculas, o sistema usa a já cadastrada, pra não duplicar.
-2. **Assunto:** mesma ideia, com sugestões dos assuntos daquela disciplina.
-3. **Dificuldade:** Fácil, Médio ou Difícil (tabela abaixo).
-4. **Palavras e dicas:** escreva a dica, escreva a resposta e clique em **Adicionar Par (OK)**. O contador mostra quantos pares você já tem. Use **✎** para editar um par (depois **Salvar Alteração** ou **Cancelar edição**) e **X** para remover. Com pelo menos 10 pares, clique em **Salvar Jogo!**.
-
-**Regras da resposta:** uma palavra só, sem espaços; só letras (sem números ou símbolos); acentos aceitos (na grade aparecem sem acento, ex.: "Xícara" vira XICARA); no máximo 15 letras.
-
-| Dificuldade | Grade (linhas x colunas) | Máx. palavras | Direções |
-|---|---|---|---|
-| Fácil | 15 x 17 | 15 | Direita e para baixo |
-| Médio | 15 x 21 | 20 | 8 direções (diagonais e de trás pra frente) |
-| Difícil | 15 x 25 | 25 | 8 direções |
-
-O mínimo é **10 palavras** em todos os níveis. Você não escolhe onde cada palavra fica, a grade é automática.
