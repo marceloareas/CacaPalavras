@@ -1,3 +1,11 @@
+# WordHunt: Manual do Usuário
+Projeto da disciplina **Projeto e Construção de Sistemas** (CEFET/RJ).
+Equipe: Clara Ribeiro Barreto, Julia Iacovellis Pinho e Kaio da Silva dos Santos.
+
+## Status do projeto
+
+O WordHunt está **em desenvolvimento**. Hoje funciona de ponta a ponta o **lado do professor** (criar, editar, excluir e visualizar caça-palavras). O **lado do aluno** (escolher jogo, jogar, pontuar, histórico) e a **integração com a Lúdica** estão previstos nos documentos, mas ainda não existem no código. Os manuais separam o que já funciona do que é planejado.
+
 # Manual do Usuário
 
 ## 1. O que é
