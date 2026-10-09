@@ -43,3 +43,26 @@ O **Painel do Professor** tem: **Visualizar Meus Caça-Palavras**, **Criar Novo 
 | Difícil | 15 x 25 | 25 | 8 direções |
 
 O mínimo é **10 palavras** em todos os níveis. Você não escolhe onde cada palavra fica, a grade é automática.
+
+### Visualizar
+
+Depois de salvar (ou ao clicar em **Visualizar** num jogo da lista) aparecem as **dicas numeradas** à esquerda e a **grade** à direita. O botão **Mostrar respostas na grade** pinta cada resposta de uma cor (a mesma cor aparece ao lado da dica). Só clicar de novo para ocultar.
+
+### Meus caça-palavras
+
+Lista os jogos que você criou (mais novos primeiro). Em cada um:
+- **Visualizar:** abre o preview.
+- **Editar:** abre os passos já preenchidos. Ao salvar, a grade é gerada de novo (as palavras mudam de lugar).
+- **Excluir:** pede confirmação e apaga o jogo e o histórico dele. Não dá pra desfazer.
+
+### Mensagens de erro
+
+| Mensagem | O que fazer |
+|---|---|
+| "Por favor, preencha a disciplina/o assunto." | Preencher o campo |
+| "Preencha dica e resposta. A resposta deve ser uma palavra única sem espaços." | Faltou dica/resposta, ou a resposta tem espaço |
+| "A resposta deve ter apenas letras…" / "…no máximo 15 letras." | Tirar números e símbolos / usar palavra menor |
+| "Máximo de X palavras atingido…" / "O nível Y permite no máximo X palavras…" | Remover pares ou mudar a dificuldade |
+| "O sistema exige no mínimo 10 palavras cadastradas!" | Cadastrar mais pares |
+| "Erro ao salvar: Não coube na grade…" | Remover ou encurtar alguma palavra |
+| "Erro ao salvar: …Verifique se o assunto já existe para esta disciplina." | Provavelmente já existe um jogo com a mesma disciplina, assunto e dificuldade. Tem que mudar um dos três |
