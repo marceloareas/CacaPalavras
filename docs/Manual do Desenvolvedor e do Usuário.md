@@ -249,7 +249,8 @@ sequenceDiagram
     end
 ```
 
-[Diagrama de Casos de Uso - WordHunt.pdf](https://github.com/user-attachments/files/33258373/Diagrama.de.Casos.de.Uso.-.WordHunt.pdf)
+<img width="1241" height="1755" alt="Diagrama de Casos de Uso - WordHunt_page-0001" src="https://github.com/user-attachments/assets/ae4115d2-eea5-40d7-8f4d-15cb7e0c5c5c" />
+
 Resumo: o **Aluno** seleciona jogo (extensões: modo aleatório, filtrar por dificuldade, filtrar por tema), visualiza perfil e histórico, joga e se autentica; o **Professor** mantém caça-palavras, se autentica e joga; a **Lúdica** (externa) se liga à autenticação.
 
 ## 10. Deploy
