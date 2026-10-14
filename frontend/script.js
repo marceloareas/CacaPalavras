@@ -358,6 +358,70 @@ function addWord() {
     document.getElementById("input-pergunta").focus();
 }
 
+function importarArquivoTXT(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const conteudo = e.target.result;
+        // divide o texto linha por linha
+        const linhas = conteudo.split(/\r?\n/);
+        const max = LIMITES[gameData.dificuldade];
+        
+        let importados = 0;
+        let ignorados = 0;
+
+        linhas.forEach(linha => {
+            // ignora linhas vazias
+            if (!linha.trim()) return;
+
+            const partes = linha.split(';');
+            if (partes.length >= 2) {
+                // junta caso o professor tenha colocado ';' no meio da pergunta sem querer
+                const resposta = partes.pop().trim(); 
+                const pergunta = partes.join(';').trim();
+
+                // validação básica
+                if (!pergunta || !resposta || resposta.includes(" ")) {
+                    ignorados++;
+                    return;
+                }
+                
+                // validação de caracteres e tamanho
+                const semAcento = removerAcentos(resposta);
+                if (!/^[A-Za-z]+$/.test(semAcento) || semAcento.length > MAX_LETRAS) {
+                    ignorados++;
+                    return;
+                }
+
+                // validação do limite da dificuldade
+                if (gameData.perguntas_respostas.length < max) {
+                    gameData.perguntas_respostas.push({ pergunta, resposta });
+                    importados++;
+                } else {
+                    ignorados++; // limite da dificuldade foi atingido
+                }
+            } else {
+                ignorados++; // linha fora do formato Dica;Resposta
+            }
+        });
+
+        atualizarListaPalavrasUI();
+        
+        // limpa o input file para permitir importar o mesmo arquivo novamente se o professor quiser
+        document.getElementById('input-arquivo-txt').value = '';
+
+        if (importados > 0 && ignorados === 0) {
+            alert(`✅ Sucesso! ${importados} palavras importadas do arquivo.`);
+        } else {
+            alert(`Importação concluída:\n✅ ${importados} inseridos com sucesso.\n⚠️ ${ignorados} ignorados (formato errado, resposta inválida ou limite atingido).`);
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
 async function salvarJogo() {
     if (gameData.perguntas_respostas.length < 10) {
         return alert("O sistema exige no mínimo 10 palavras cadastradas!");
@@ -444,6 +508,7 @@ function localizarPalavra(matriz, palavra, dificuldade) {
     return achadas;
 }
 
+// Cor clarinha e diferente para cada par (ângulo áureo espalha bem os tons)
 function corDoPar(i) {
     return `hsl(${Math.round((i * 137.508) % 360)}, 80%, 82%)`;
 }
@@ -457,6 +522,7 @@ function mostrarPreview(matriz, perguntas, dificuldade) {
     const lista = document.getElementById("lista-perguntas-preview");
     lista.innerHTML = "";
     perguntas.forEach((pr, i) => {
+        // textContent (e não innerHTML) para o texto digitado nunca ser interpretado como HTML
         const li = document.createElement("li");
         const cor = document.createElement("span");
         cor.className = "cor";

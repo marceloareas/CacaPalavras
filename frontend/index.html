@@ -107,6 +107,15 @@
                 <button id="btn-add-par" onclick="addWord()">Adicionar Par (OK) ✔</button>
                 <button id="btn-cancelar-edicao" class="btn-voltar" style="display: none;" onclick="cancelarEdicao()">Cancelar edição</button>
             </div>
+
+            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
+                <input type="file" id="input-arquivo-txt" accept=".txt" style="display: none;" onchange="importarArquivoTXT(event)">
+                <button onclick="document.getElementById('input-arquivo-txt').click()" style="background-color: #f3ece4; border: 2px dashed #202020; max-width: 300px; padding: 10px; font-size: 14px;">
+                    Importar arquivo .txt
+                </button>
+            </div>
+            <p style="text-align: center; font-size: 12px; color: #888; margin-top: -15px; margin-bottom: 15px;">Formato do arquivo: <i>Dica ; Resposta</i></p>
+
             <ul id="lista-palavras" class="list-container"></ul>
             
             <div class="btn-group" style="margin-top: 20px;">
