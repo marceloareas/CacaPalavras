@@ -127,8 +127,15 @@
         <!-- TELA DE PREVIEW (Para Criação e Visualização) -->
         <div id="screen-preview" class="screen">
             <h2 id="preview-title">Jogo Salvo com Sucesso!</h2>
-            <div style="display: flex; justify-content: center;">
-                <button id="btn-toggle-respostas" style="max-width: 400px; margin-bottom: 15px;" onclick="alternarRespostas()">👁 Mostrar respostas na grade</button>
+            <div class="btn-group preview-acoes">
+                <button id="btn-toggle-respostas" onclick="alternarRespostas()">👁 Mostrar respostas na grade</button>
+                <button id="btn-jogar" onclick="iniciarJogo()">🎮 Jogar este caça-palavras</button>
+            </div>
+            <!-- Aparece só no modo jogo (professor testando: sem pontuação) -->
+            <div id="barra-jogo" class="barra-jogo" style="display: none;">
+                <span class="selo-teste">MODO TESTE</span>
+                <span>Encontradas: <b id="jogo-contador">0/0</b></span>
+                <span id="jogo-msg">Arraste da primeira à última letra e confirme com ✔</span>
             </div>
             <div id="preview-layout" class="preview-layout">
                 <aside class="painel-perguntas">

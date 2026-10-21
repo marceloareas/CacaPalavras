@@ -176,6 +176,7 @@ button:active {
     display: grid;
     gap: 3px;
     width: max-content; /* a grade nunca encolhe: o tamanho das células é fixo */
+    position: relative; /* referência para o balão de confirmação do modo jogo */
     background-color: #e9e0d4;
     padding: 10px;
     border-radius: 15px;
@@ -223,6 +224,41 @@ button:active {
 .preview-layout.mostrando .painel-perguntas .cor { display: block; }
 .preview-layout.mostrando .painel-perguntas .resposta-par { display: block; }
 .preview-grid-wrap { flex: 1; min-width: 0; overflow-x: auto; }
+
+/* ---------- Modo jogo (professor testando o próprio caça-palavras) ---------- */
+.preview-acoes { max-width: 700px; margin: 0 auto 15px; }
+.barra-jogo {
+    display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; justify-content: center;
+    margin: 0 auto 15px; padding: 10px 15px; max-width: 900px;
+    background-color: #f3ece4; border: 2px solid #202020; border-radius: 15px; font-size: 14px;
+}
+.selo-teste { background-color: #202020; color: #f5f5ef; font-weight: bold; font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+#jogo-msg.erro { color: #c0392b; font-weight: bold; }
+#jogo-msg.sucesso { color: #1e8449; font-weight: bold; }
+
+.preview-layout.jogando .matriz-grid { touch-action: none; user-select: none; -webkit-user-select: none; }
+.preview-layout.jogando .matriz-cell { cursor: pointer; }
+.matriz-cell.sel { background-color: #ffd34d !important; }   /* seleção em andamento */
+.matriz-cell.erro { background-color: #f2a7a7 !important; animation: tremer 0.35s; }
+@keyframes tremer { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+
+/* Balão com ✔ / ✖ que aparece ao soltar o botão do mouse */
+.confirmar-selecao {
+    position: absolute; z-index: 5; display: flex; gap: 6px; padding: 4px;
+    transform: translateX(-50%);
+    background-color: #f5f5ef; border: 2px solid #202020; border-radius: 999px;
+    box-shadow: 3px 3px 0 #202020;
+}
+.confirmar-selecao button {
+    flex: none; width: 32px; height: 32px; padding: 0; border-radius: 50%;
+    box-shadow: none; font-size: 16px; line-height: 1;
+}
+.confirmar-selecao .btn-ok { background-color: #9be3a5; }
+.confirmar-selecao .btn-nao { background-color: #f2a7a7; }
+
+/* Dica já encontrada: cor e resposta aparecem, texto riscado */
+.painel-perguntas li.achada .cor, .painel-perguntas li.achada .resposta-par { display: block; }
+.painel-perguntas li.achada .texto-dica { text-decoration: line-through; color: #666; }
 
 /* Telas estreitas: dicas em cima, grade embaixo */
 @media (max-width: 900px) {

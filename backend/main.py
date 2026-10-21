@@ -44,13 +44,17 @@ def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
 
 def _tentar_gerar(palavras, linhas, colunas, dificuldade):
+    """Tenta encaixar todas as palavras. Devolve (matriz, posicoes) ou None se alguma não coube.
+    posicoes[i] descreve onde a palavra i (na ordem original) foi colocada."""
     matriz = [['' for _ in range(colunas)] for _ in range(linhas)]
+    posicoes = [None] * len(palavras)
     direcoes = [(0, 1), (1, 0)]  # Regra: Fácil só direita e baixo
     if dificuldade != "Fácil":
         direcoes += [(1, 1), (-1, -1), (0, -1), (-1, 0), (1, -1), (-1, 1)]
 
     # palavras maiores primeiro: são as mais difíceis de encaixar
-    for palavra in sorted(palavras, key=len, reverse=True):
+    for idx in sorted(range(len(palavras)), key=lambda i: len(palavras[i]), reverse=True):
+        palavra = palavras[idx]
         colocada = False
         for _ in range(500):
             dl, dc = random.choice(direcoes)
@@ -64,27 +68,31 @@ def _tentar_gerar(palavras, linhas, colunas, dificuldade):
                    for i, ch in enumerate(palavra)):
                 for i, ch in enumerate(palavra):
                     matriz[linha + dl * i][coluna + dc * i] = ch
+                # posição inicial (linha, coluna), passo por letra (dl, dc) e tamanho da palavra
+                posicoes[idx] = {"linha": linha, "coluna": coluna, "dl": dl, "dc": dc, "tamanho": len(palavra)}
                 colocada = True
                 break
         if not colocada:
             return None
-    return matriz
+    return matriz, posicoes
 
 def gerar_matriz(palavras_lista, dificuldade):
+    """Devolve (matriz, posicoes). posicoes[i] é a posição da i-ésima palavra da lista recebida."""
     cfg = CONFIG[dificuldade]
     linhas, colunas = cfg["linhas"], cfg["colunas"]
     # O backend tira acentos e espaços para a grade, deixando a lista original intacta
     palavras = [remover_acentos(p).upper().replace(" ", "") for p in palavras_lista]
 
     for _ in range(50):  # recomeça a grade se alguma palavra não coube
-        matriz = _tentar_gerar(palavras, linhas, colunas, dificuldade)
-        if matriz:
+        resultado = _tentar_gerar(palavras, linhas, colunas, dificuldade)
+        if resultado:
+            matriz, posicoes = resultado
             # Preencher espaços vazios
             for r in range(linhas):
                 for c in range(colunas):
                     if matriz[r][c] == '':
                         matriz[r][c] = random.choice(string.ascii_uppercase)
-            return matriz
+            return matriz, posicoes
     raise ValueError("Não coube na grade. Reduza o número de palavras ou use palavras menores.")
 
 def validar_jogo(jogo):
@@ -106,12 +114,17 @@ def validar_jogo(jogo):
                 detail=f"A resposta '{original}' tem mais de {MAX_LETRAS} letras.")
 
 def preparar_matriz(jogo):
+    """Valida, gera a grade e devolve (matriz, pares). Cada par sai com a 'posicao' da resposta na grade
+    (qualquer 'posicao' enviada pelo cliente é descartada: ela é sempre recalculada aqui)."""
     validar_jogo(jogo)
     palavras = [pr["resposta"] for pr in jogo.perguntas_respostas]
     try:
-        return gerar_matriz(palavras, jogo.dificuldade)
+        matriz, posicoes = gerar_matriz(palavras, jogo.dificuldade)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    pares = [{"pergunta": pr["pergunta"], "resposta": pr["resposta"], "posicao": pos}
+             for pr, pos in zip(jogo.perguntas_respostas, posicoes)]
+    return matriz, pares
 
 @app.get("/api/usuarios")
 def get_usuarios():
@@ -124,7 +137,7 @@ def get_usuarios():
 
 @app.post("/api/jogos")
 def criar_jogo(jogo: JogoCreate):
-    matriz = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
+    matriz, pares = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -132,7 +145,7 @@ def criar_jogo(jogo: JogoCreate):
         cur.execute("""
             INSERT INTO Caca_Palavras (id_professor, disciplina, assunto, dificuldade, perguntas_respostas, matriz_letras)
             VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_jogo;
-        """, (jogo.id_professor, jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(jogo.perguntas_respostas), json.dumps(matriz)))
+        """, (jogo.id_professor, jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(pares), json.dumps(matriz)))
         
         id_jogo = cur.fetchone()['id_jogo']
         conn.commit()
@@ -142,7 +155,7 @@ def criar_jogo(jogo: JogoCreate):
     finally:
         conn.close()
         
-    return {"id_jogo": id_jogo, "matriz": matriz}
+    return {"id_jogo": id_jogo, "matriz": matriz, "perguntas_respostas": pares}
 
 @app.get("/api/disciplinas")
 def get_disciplinas_globais():
@@ -196,7 +209,7 @@ def get_jogo_detalhe(id_jogo: int):
 
 @app.put("/api/jogos/{id_jogo}")
 def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
-    matriz = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
+    matriz, pares = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
     conn = get_db_connection()
     cur = conn.cursor()
     
@@ -205,7 +218,7 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
             UPDATE Caca_Palavras 
             SET disciplina = %s, assunto = %s, dificuldade = %s, perguntas_respostas = %s, matriz_letras = %s
             WHERE id_jogo = %s;
-        """, (jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(jogo.perguntas_respostas), json.dumps(matriz), id_jogo))
+        """, (jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(pares), json.dumps(matriz), id_jogo))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -213,4 +226,4 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
     finally:
         conn.close()
         
-    return {"id_jogo": id_jogo, "matriz": matriz}
+    return {"id_jogo": id_jogo, "matriz": matriz, "perguntas_respostas": pares}

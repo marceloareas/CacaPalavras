@@ -116,6 +116,7 @@ async function carregarMeusJogos() {
             <div><b>Disciplina:</b> ${j.disciplina} <br><b>Assunto:</b> ${j.assunto} (${j.dificuldade})</div>
             <div style="display: flex; gap: 10px; width: 100%;">
                 <button onclick="visualizarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Visualizar</button>
+                <button onclick="jogarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Jogar</button>
                 <button onclick="editarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Editar</button>
                 <button class="btn-voltar" onclick="deletarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Excluir</button>
             </div>
@@ -131,15 +132,21 @@ async function deletarJogo(id_jogo) {
     }
 }
 
-async function visualizarJogo(id_jogo) {
+async function visualizarJogo(id_jogo, jogar = false) {
     const res = await fetch(`${API_URL}/jogos/${id_jogo}`);
     if(res.ok) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = `Visualizando: ${data.assunto}`;
-        mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade);
+        mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade, data.assunto);
         document.getElementById("btn-preview-voltar").onclick = carregarMeusJogos; 
         showScreen('screen-preview');
+        if (jogar) iniciarJogo();
     }
+}
+
+// Abre o jogo já no modo "jogar" (professor testando; não há pontuação)
+function jogarJogo(id_jogo) {
+    return visualizarJogo(id_jogo, true);
 }
 
 async function editarJogo(id_jogo) {
@@ -446,7 +453,8 @@ async function salvarJogo() {
         const data = await res.json();
         document.getElementById("preview-title").innerText = "Jogo Salvo com Sucesso!";
         // Chama o renderizador passando a matriz gerada e as dicas originais
-        mostrarPreview(data.matriz, gameData.perguntas_respostas, gameData.dificuldade);
+        // o backend devolve os pares já com a posição de cada resposta na grade
+        mostrarPreview(data.matriz, data.perguntas_respostas || gameData.perguntas_respostas, gameData.dificuldade, gameData.assunto);
         document.getElementById("btn-preview-voltar").onclick = voltarAoMenu; 
         showScreen('screen-preview');
     } else {
@@ -455,9 +463,14 @@ async function salvarJogo() {
     }
 }
 
-// ---------- Visualização do jogo: dicas à esquerda + grade à direita ----------
+// ---------- Visualização e modo jogo: dicas à esquerda + grade à direita ----------
 let previewAtual = null;       // { celulas, ocorrencias } do jogo exibido
+let jogoAtual = null;          // { matriz, perguntas, dificuldade, assunto }
 let mostrarRespostas = false;  // por padrão, as respostas ficam desligadas
+let modoJogo = false;          // false = só visualizar; true = professor jogando (sem pontuação)
+let achadas = new Map();       // índice do par -> lista de [linha, coluna] que o jogador marcou
+let selecao = null;            // { cels: [[l, c], ...], confirmando: bool } (seleção em andamento)
+let arrasto = null;            // { inicio: [l, c] } enquanto o botão do mouse está pressionado
 
 const TAMANHO_CELULA = 32; // px. Igual em todas as dificuldades (o CSS usa o mesmo valor)
 
@@ -466,16 +479,19 @@ function renderizarMatriz(matriz) {
     const grid = document.getElementById("matriz-preview");
     grid.innerHTML = "";
     grid.style.gridTemplateColumns = `repeat(${matriz[0].length}, ${TAMANHO_CELULA}px)`; // colunas = largura da matriz
-    return matriz.map(linha => linha.map(letra => {
+    return matriz.map((linha, r) => linha.map((letra, c) => {
         const div = document.createElement("div");
         div.className = "matriz-cell";
         div.innerText = letra;
+        div.dataset.r = r;
+        div.dataset.c = c;
         grid.appendChild(div);
         return div;
     }));
 }
 
 // Procura a palavra na matriz (mesmas direções que o gerador usa em cada dificuldade).
+// Só é usada em jogos ANTIGOS, salvos antes de o backend guardar a posição das palavras.
 // A grade só tem letras A-Z, então a resposta é comparada sem acento e em maiúsculas.
 // Devolve uma lista de ocorrências; cada ocorrência é uma lista de [linha, coluna].
 function localizarPalavra(matriz, palavra, dificuldade) {
@@ -508,16 +524,33 @@ function localizarPalavra(matriz, palavra, dificuldade) {
     return achadas;
 }
 
+// Células ocupadas por uma resposta. Jogos novos trazem a posição salva pelo backend
+// ({ linha, coluna, dl, dc, tamanho }); jogos antigos caem na busca pela matriz.
+function celulasDoPar(matriz, pr, dificuldade) {
+    const p = pr.posicao;
+    if (p) {
+        const cels = [];
+        for (let k = 0; k < p.tamanho; k++) cels.push([p.linha + p.dl * k, p.coluna + p.dc * k]);
+        return [cels];
+    }
+    return localizarPalavra(matriz, pr.resposta, dificuldade);
+}
+
 // Cor clarinha e diferente para cada par (ângulo áureo espalha bem os tons)
 function corDoPar(i) {
     return `hsl(${Math.round((i * 137.508) % 360)}, 80%, 82%)`;
 }
 
-function mostrarPreview(matriz, perguntas, dificuldade) {
+function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
     const celulas = renderizarMatriz(matriz);
-    const ocorrencias = perguntas.map(pr => localizarPalavra(matriz, pr.resposta, dificuldade));
+    const ocorrencias = perguntas.map(pr => celulasDoPar(matriz, pr, dificuldade));
     previewAtual = { celulas, ocorrencias };
+    jogoAtual = { matriz, perguntas, dificuldade, assunto };
     mostrarRespostas = false;
+    modoJogo = false;
+    achadas = new Map();
+    selecao = null;
+    arrasto = null;
 
     const lista = document.getElementById("lista-perguntas-preview");
     lista.innerHTML = "";
@@ -529,6 +562,7 @@ function mostrarPreview(matriz, perguntas, dificuldade) {
         cor.style.backgroundColor = corDoPar(i);
         const corpo = document.createElement("div");
         const pergunta = document.createElement("div");
+        pergunta.className = "texto-dica";
         pergunta.textContent = `${i + 1}. ${pr.pergunta}`;
         const resposta = document.createElement("div");
         resposta.className = "resposta-par";
@@ -540,7 +574,10 @@ function mostrarPreview(matriz, perguntas, dificuldade) {
         lista.appendChild(li);
     });
     lista.parentElement.scrollTop = 0;
-    document.getElementById("preview-layout").classList.remove("mostrando");
+    const layout = document.getElementById("preview-layout");
+    layout.classList.remove("mostrando", "jogando");
+    document.getElementById("barra-jogo").style.display = "none";
+    document.getElementById("btn-jogar").innerText = "🎮 Jogar este caça-palavras";
     atualizarBotaoRespostas();
     aplicarDestaques();
 }
@@ -561,9 +598,197 @@ function aplicarDestaques() {
     if (!previewAtual) return;
     const { celulas, ocorrencias } = previewAtual;
     celulas.forEach(linha => linha.forEach(el => { el.style.backgroundColor = ""; }));
-    if (!mostrarRespostas) return;
-    ocorrencias.forEach((lista, i) => {
-        const cor = corDoPar(i);
-        lista.forEach(cels => cels.forEach(([r, c]) => { celulas[r][c].style.backgroundColor = cor; }));
+    if (mostrarRespostas) {
+        ocorrencias.forEach((lista, i) => {
+            const cor = corDoPar(i);
+            lista.forEach(cels => cels.forEach(([r, c]) => { celulas[r][c].style.backgroundColor = cor; }));
+        });
+    }
+    // palavras que o jogador já acertou continuam coloridas
+    achadas.forEach((cels, i) => {
+        cels.forEach(([r, c]) => { celulas[r][c].style.backgroundColor = corDoPar(i); });
     });
 }
+
+// ---------- Modo jogo ----------
+function iniciarJogo() {
+    if (!jogoAtual) return;
+    modoJogo = true;
+    achadas = new Map();
+    mostrarRespostas = false;
+    limparSelecao();
+    document.getElementById("preview-title").innerText = `Jogando: ${jogoAtual.assunto}`;
+    const layout = document.getElementById("preview-layout");
+    layout.classList.remove("mostrando");
+    layout.classList.add("jogando");
+    document.getElementById("barra-jogo").style.display = "flex";
+    document.getElementById("btn-jogar").innerText = "↺ Reiniciar jogo";
+    atualizarBotaoRespostas();
+    atualizarPainelJogo();
+    aplicarDestaques();
+    mostrarMensagemJogo();
+}
+
+function mostrarMensagemJogo(texto = "Arraste da primeira à última letra e confirme com ✔", tipo = "") {
+    const msg = document.getElementById("jogo-msg");
+    msg.textContent = texto;
+    msg.className = tipo;
+    document.getElementById("jogo-contador").textContent = `${achadas.size}/${jogoAtual.perguntas.length}`;
+}
+
+function atualizarPainelJogo() {
+    document.querySelectorAll("#lista-perguntas-preview li").forEach((li, i) => {
+        li.classList.toggle("achada", achadas.has(i));
+    });
+}
+
+// Dado o início e a posição do mouse, calcula as células da seleção.
+// A seleção "encaixa" na direção mais próxima (8 direções) e para na borda da grade.
+function selecaoAte(inicio, x, y) {
+    const cel = previewAtual.celulas;
+    const base = cel[0][0].getBoundingClientRect();
+    const passo = cel[0].length > 1 ? cel[0][1].getBoundingClientRect().left - base.left : base.width;
+    const cx = base.left + inicio[1] * passo + base.width / 2;
+    const cy = base.top + inicio[0] * passo + base.height / 2;
+    const dx = (x - cx) / passo, dy = (y - cy) / passo;
+    if (Math.hypot(dx, dy) < 0.6) return [inicio];
+
+    const k = Math.round(Math.atan2(dy, dx) / (Math.PI / 4));
+    const dc = Math.round(Math.cos(k * Math.PI / 4));
+    const dl = Math.round(Math.sin(k * Math.PI / 4));
+    let n = Math.round((dx * dc + dy * dl) / (dc * dc + dl * dl)); // passos ao longo da direção
+    const linhas = cel.length, colunas = cel[0].length;
+    const limL = dl > 0 ? linhas - 1 - inicio[0] : dl < 0 ? inicio[0] : Infinity;
+    const limC = dc > 0 ? colunas - 1 - inicio[1] : dc < 0 ? inicio[1] : Infinity;
+    n = Math.max(0, Math.min(n, limL, limC));
+
+    const cels = [];
+    for (let i = 0; i <= n; i++) cels.push([inicio[0] + dl * i, inicio[1] + dc * i]);
+    return cels;
+}
+
+function pintarSelecao(erro = false) {
+    if (!previewAtual) return;
+    previewAtual.celulas.forEach(l => l.forEach(el => el.classList.remove("sel", "erro")));
+    if (!selecao) return;
+    selecao.cels.forEach(([r, c]) => previewAtual.celulas[r][c].classList.add(erro ? "erro" : "sel"));
+}
+
+function removerBalao() {
+    const b = document.getElementById("balao-confirmar");
+    if (b) b.remove();
+}
+
+function limparSelecao() {
+    selecao = null;
+    arrasto = null;
+    removerBalao();
+    pintarSelecao();
+}
+
+// Balão com ✔ e ✖ ao lado da última letra selecionada
+function mostrarBalao() {
+    removerBalao();
+    const [r, c] = selecao.cels[selecao.cels.length - 1];
+    const fim = previewAtual.celulas[r][c];
+    const grid = document.getElementById("matriz-preview");
+    const balao = document.createElement("div");
+    balao.id = "balao-confirmar";
+    balao.className = "confirmar-selecao";
+    balao.innerHTML = '<button class="btn-ok" title="Confirmar (Enter)">✔</button><button class="btn-nao" title="Cancelar (Esc)">✖</button>';
+    balao.querySelector(".btn-ok").onclick = confirmarSelecao;
+    balao.querySelector(".btn-nao").onclick = limparSelecao;
+    grid.appendChild(balao);
+    const metade = balao.offsetWidth / 2;
+    const esq = Math.max(metade, Math.min(fim.offsetLeft + TAMANHO_CELULA / 2, grid.clientWidth - metade));
+    // abre do lado para onde o arrasto está indo (assim não cobre as letras selecionadas);
+    // se não houver espaço nesse lado, abre no outro
+    const subindo = selecao.cels.length > 1 && r < selecao.cels[0][0];
+    let emCima = subindo;
+    if (emCima && r < 1) emCima = false;
+    if (!emCima && r >= previewAtual.celulas.length - 1) emCima = true;
+    balao.style.left = `${esq}px`;
+    balao.style.top = `${emCima ? fim.offsetTop - balao.offsetHeight - 4 : fim.offsetTop + TAMANHO_CELULA + 4}px`;
+}
+
+// Confere a seleção: vale se as letras (ou elas ao contrário) formam uma resposta ainda não encontrada.
+function confirmarSelecao() {
+    if (!modoJogo || !selecao || !selecao.confirmando) return;
+    const { matriz, perguntas } = jogoAtual;
+    const letras = selecao.cels.map(([r, c]) => matriz[r][c]).join("");
+    const invertida = [...letras].reverse().join("");
+    const chave = selecao.cels.map(([r, c]) => `${r},${c}`).sort().join(";");
+
+    const candidatos = perguntas
+        .map((pr, i) => i)
+        .filter(i => !achadas.has(i) && [letras, invertida].includes(removerAcentos(perguntas[i].resposta).toUpperCase()));
+    // se houver mais de uma candidata (respostas iguais ou coincidência na grade), prefere a que está nessa posição
+    const noLugar = candidatos.find(i => previewAtual.ocorrencias[i].some(
+        cels => cels.map(([r, c]) => `${r},${c}`).sort().join(";") === chave));
+    const acerto = noLugar !== undefined ? noLugar : candidatos[0];
+
+    removerBalao();
+    if (acerto === undefined) {
+        pintarSelecao(true); // pisca em vermelho
+        const errada = selecao;
+        setTimeout(() => { if (selecao === errada) limparSelecao(); }, 450);
+        mostrarMensagemJogo("Essa sequência não é uma das respostas. Tente de novo.", "erro");
+        return;
+    }
+    achadas.set(acerto, selecao.cels);
+    limparSelecao();
+    atualizarPainelJogo();
+    aplicarDestaques();
+    if (achadas.size === perguntas.length) {
+        mostrarMensagemJogo("🎉 Parabéns! Você encontrou todas as palavras.", "sucesso");
+    } else {
+        mostrarMensagemJogo(`Boa! Achou "${perguntas[acerto].resposta}".`, "sucesso");
+    }
+}
+
+function iniciarArrasto(e) {
+    if (!modoJogo || !previewAtual) return;
+    if (e.button !== undefined && e.button !== 0) return;       // só botão esquerdo
+    if (e.target.closest("#balao-confirmar")) return;           // clique no ✔/✖ não inicia seleção
+    const alvo = e.target.closest(".matriz-cell");
+    if (!alvo) return;
+    e.preventDefault();
+    removerBalao();
+    arrasto = { inicio: [Number(alvo.dataset.r), Number(alvo.dataset.c)] };
+    selecao = { cels: [arrasto.inicio], confirmando: false };
+    pintarSelecao();
+    try { document.getElementById("matriz-preview").setPointerCapture(e.pointerId); } catch (_) {}
+}
+
+function moverArrasto(e) {
+    if (!arrasto || !selecao) return;
+    selecao.cels = selecaoAte(arrasto.inicio, e.clientX, e.clientY);
+    pintarSelecao();
+}
+
+function soltarArrasto(e) {
+    if (!arrasto || !selecao) return;
+    moverArrasto(e);
+    arrasto = null;
+    selecao.confirmando = true; // agora espera o ✔ (ou ✖)
+    mostrarBalao();
+}
+
+function cancelarArrasto() {
+    if (arrasto) limparSelecao();
+}
+
+function inicializarJogoUI() {
+    const grid = document.getElementById("matriz-preview");
+    grid.addEventListener("pointerdown", iniciarArrasto);
+    grid.addEventListener("pointermove", moverArrasto);
+    grid.addEventListener("pointerup", soltarArrasto);
+    grid.addEventListener("pointercancel", cancelarArrasto);
+    document.addEventListener("keydown", (e) => {
+        if (!modoJogo || !selecao || !selecao.confirmando) return;
+        if (!document.getElementById("screen-preview").classList.contains("active")) return;
+        if (e.key === "Enter") { e.preventDefault(); confirmarSelecao(); }
+        if (e.key === "Escape") limparSelecao();
+    });
+}
+inicializarJogoUI();
