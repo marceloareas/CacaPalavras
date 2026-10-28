@@ -266,3 +266,62 @@ button:active {
     .painel-perguntas { flex: none; width: 100%; max-height: 220px; }
     .preview-grid-wrap { width: 100%; }
 }
+
+/* Tooltip de Importação de Arquivo */
+.tooltip-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: help;
+}
+
+.tooltip-icon {
+    background-color: #202020;
+    color: #f5f5ef;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 12px;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 220px;
+    background-color: #202020;
+    color: #f5f5ef;
+    text-align: left;
+    border-radius: 10px;
+    padding: 12px;
+    position: absolute;
+    z-index: 10;
+    bottom: 130%; 
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+    font-size: 13px;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
+    line-height: 1.5;
+}
+
+/* Setinha apontando para baixo no balão do tooltip */
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: #202020 transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}

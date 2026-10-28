@@ -103,18 +103,31 @@
             <input type="text" id="input-pergunta" placeholder="Digite a Dica ou Pergunta" autocomplete="off">
             <input type="text" id="input-resposta" placeholder="Digite a Resposta (Uma única palavra)" autocomplete="off">
             
-            <div class="btn-group" style="margin-bottom: 15px;">
-                <button id="btn-add-par" onclick="addWord()">Adicionar Par (OK) ✔</button>
-                <button id="btn-cancelar-edicao" class="btn-voltar" style="display: none;" onclick="cancelarEdicao()">Cancelar edição</button>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 25px;">
+                <button id="btn-add-par" onclick="addWord()" style="flex: none; width: 250px;">Adicionar Par (OK) ✔</button>
+                <button id="btn-cancelar-edicao" class="btn-voltar" style="display: none; flex: none; width: 200px;" onclick="cancelarEdicao()">Cancelar edição</button>
             </div>
 
-            <div style="display: flex; justify-content: center; margin-bottom: 20px;">
-                <input type="file" id="input-arquivo-txt" accept=".txt" style="display: none;" onchange="importarArquivoTXT(event)">
-                <button onclick="document.getElementById('input-arquivo-txt').click()" style="background-color: #f3ece4; border: 2px dashed #202020; max-width: 300px; padding: 10px; font-size: 14px;">
-                    Importar arquivo .txt
-                </button>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #202020; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0; font-size: 16px; color: #202020;">Palavras Cadastradas</h3>
+                
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div class="tooltip-container">
+                        <span class="tooltip-icon">?</span>
+                        <div class="tooltip-text">
+                            <b>Formato do arquivo .txt:</b><br>
+                            Dica;Resposta<br><br>
+                            <i>Exemplo:</i><br>
+                            Maior planeta do sistema solar;Júpiter
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="input-arquivo-txt" accept=".txt" style="display: none;" onchange="importarArquivoTXT(event)">
+                    <button onclick="document.getElementById('input-arquivo-txt').click()" style="flex: none; padding: 8px 15px; font-size: 14px; margin: 0;">
+                        Importar arquivo .txt
+                    </button>
+                </div>
             </div>
-            <p style="text-align: center; font-size: 12px; color: #888; margin-top: -15px; margin-bottom: 15px;">Formato do arquivo: <i>Dica ; Resposta</i></p>
 
             <ul id="lista-palavras" class="list-container"></ul>
             
