@@ -325,3 +325,25 @@ button:active {
     visibility: visible;
     opacity: 1;
 }
+
+/* Interatividade das Dicas (Modo Jogo)*/
+.preview-layout.jogando .painel-perguntas li {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hover em dicas que ainda não foram achadas */
+.preview-layout.jogando .painel-perguntas li:hover:not(.achada) {
+    background-color: #f5f5ef;
+    transform: translateX(4px);
+}
+
+.painel-perguntas li.selecionada {
+    background-color: #ffd34d !important;
+    border: 2px solid #202020;
+    border-radius: 10px;
+    box-shadow: 3px 3px 0px #202020;
+    transform: translateX(5px);
+    padding: 10px;
+    margin: 5px 0;
+}

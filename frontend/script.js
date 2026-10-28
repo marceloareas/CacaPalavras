@@ -4,6 +4,9 @@ let editandoId = null;
 let gameData = { disciplina: "", assunto: "", dificuldade: "Fácil", perguntas_respostas: [] };
 let disciplinasSalvas = [];
 let assuntosSalvos = [];
+let dicaSelecionada = null; // guarda o índice da dica que o aluno clicou
+const somCorreto = new Audio("sons/correto.wav");
+const somIncorreto = new Audio("sons/incorreto.wav");
 
 // Limites do jogo. Devem ser iguais ao CONFIG do backend (backend/main.py).
 const LIMITES = { "Fácil": 15, "Médio": 20, "Difícil": 25 };
@@ -549,14 +552,18 @@ function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
     mostrarRespostas = false;
     modoJogo = false;
     achadas = new Map();
+    dicaSelecionada = null;
     selecao = null;
     arrasto = null;
 
     const lista = document.getElementById("lista-perguntas-preview");
     lista.innerHTML = "";
     perguntas.forEach((pr, i) => {
-        // textContent (e não innerHTML) para o texto digitado nunca ser interpretado como HTML
         const li = document.createElement("li");
+        
+        // evento de clique para selecionar a dica no modo jogo
+        li.onclick = () => selecionarDica(i);
+        
         const cor = document.createElement("span");
         cor.className = "cor";
         cor.style.backgroundColor = corDoPar(i);
@@ -615,6 +622,7 @@ function iniciarJogo() {
     if (!jogoAtual) return;
     modoJogo = true;
     achadas = new Map();
+    dicaSelecionada = null;
     mostrarRespostas = false;
     limparSelecao();
     document.getElementById("preview-title").innerText = `Jogando: ${jogoAtual.assunto}`;
@@ -626,7 +634,8 @@ function iniciarJogo() {
     atualizarBotaoRespostas();
     atualizarPainelJogo();
     aplicarDestaques();
-    mostrarMensagemJogo();
+    
+    mostrarMensagemJogo("Primeiro, clique em uma dica na lista. Depois, encontre a palavra na grade!", "");
 }
 
 function mostrarMensagemJogo(texto = "Arraste da primeira à última letra e confirme com ✔", tipo = "") {
@@ -636,9 +645,16 @@ function mostrarMensagemJogo(texto = "Arraste da primeira à última letra e con
     document.getElementById("jogo-contador").textContent = `${achadas.size}/${jogoAtual.perguntas.length}`;
 }
 
+function selecionarDica(index) {
+    if (!modoJogo || achadas.has(index)) return; // não faz nada se não estiver jogando ou se já achou
+    dicaSelecionada = index;
+    atualizarPainelJogo();
+}
+
 function atualizarPainelJogo() {
     document.querySelectorAll("#lista-perguntas-preview li").forEach((li, i) => {
         li.classList.toggle("achada", achadas.has(i));
+        li.classList.toggle("selecionada", i === dicaSelecionada);
     });
 }
 
@@ -714,35 +730,47 @@ function mostrarBalao() {
 // Confere a seleção: vale se as letras (ou elas ao contrário) formam uma resposta ainda não encontrada.
 function confirmarSelecao() {
     if (!modoJogo || !selecao || !selecao.confirmando) return;
+
+    // verifica se o aluno selecionou uma dica antes de confirmar a palavra
+    if (dicaSelecionada === null) {
+        somIncorreto.currentTime = 0;
+        somIncorreto.play();
+        removerBalao();
+        limparSelecao();
+        mostrarMensagemJogo("⚠️ Selecione uma dica na lista à esquerda antes de confirmar!", "erro");
+        return;
+    }
+
     const { matriz, perguntas } = jogoAtual;
     const letras = selecao.cels.map(([r, c]) => matriz[r][c]).join("");
     const invertida = [...letras].reverse().join("");
-    const chave = selecao.cels.map(([r, c]) => `${r},${c}`).sort().join(";");
-
-    const candidatos = perguntas
-        .map((pr, i) => i)
-        .filter(i => !achadas.has(i) && [letras, invertida].includes(removerAcentos(perguntas[i].resposta).toUpperCase()));
-    // se houver mais de uma candidata (respostas iguais ou coincidência na grade), prefere a que está nessa posição
-    const noLugar = candidatos.find(i => previewAtual.ocorrencias[i].some(
-        cels => cels.map(([r, c]) => `${r},${c}`).sort().join(";") === chave));
-    const acerto = noLugar !== undefined ? noLugar : candidatos[0];
+    const respostaCerta = removerAcentos(perguntas[dicaSelecionada].resposta).toUpperCase();
 
     removerBalao();
-    if (acerto === undefined) {
-        pintarSelecao(true); // pisca em vermelho
+
+    if (letras === respostaCerta || invertida === respostaCerta) {
+        somCorreto.currentTime = 0;
+        somCorreto.play();
+        achadas.set(dicaSelecionada, selecao.cels);
+        const indexAcerto = dicaSelecionada;
+        dicaSelecionada = null; // reseta a seleção para obrigar a clicar na próxima dica
+        
+        limparSelecao();
+        atualizarPainelJogo();
+        aplicarDestaques();
+        
+        if (achadas.size === perguntas.length) {
+            mostrarMensagemJogo("🎉 Parabéns! Você encontrou e associou todas as palavras.", "sucesso");
+        } else {
+            mostrarMensagemJogo(`Boa! Achou "${perguntas[indexAcerto].resposta}". Escolha a próxima dica.`, "sucesso");
+        }
+    } else {
+        somIncorreto.currentTime = 0;
+        somIncorreto.play(); 
+        pintarSelecao(true);
         const errada = selecao;
         setTimeout(() => { if (selecao === errada) limparSelecao(); }, 450);
-        mostrarMensagemJogo("Essa sequência não é uma das respostas. Tente de novo.", "erro");
-        return;
-    }
-    achadas.set(acerto, selecao.cels);
-    limparSelecao();
-    atualizarPainelJogo();
-    aplicarDestaques();
-    if (achadas.size === perguntas.length) {
-        mostrarMensagemJogo("🎉 Parabéns! Você encontrou todas as palavras.", "sucesso");
-    } else {
-        mostrarMensagemJogo(`Boa! Achou "${perguntas[acerto].resposta}".`, "sucesso");
+        mostrarMensagemJogo("Palavra incorreta ou associada à dica errada. Tente de novo.", "erro");
     }
 }
 
