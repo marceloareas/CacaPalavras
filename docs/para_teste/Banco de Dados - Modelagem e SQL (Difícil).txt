@@ -1,0 +1,25 @@
+Estrutura fundamental que armazena dados em linhas e colunas.;Tabela
+Representa um atributo específico verticalmente na tabela.;Coluna
+Representa um registro único horizontalmente na tabela.;Linha
+Sinônimo técnico para um dado inserido em um banco relacional.;Registro
+Propriedade ou característica que descreve uma entidade.;Atributo
+Objeto ou conceito do mundo real mapeado para o banco.;Entidade
+Associação estabelecida entre duas ou mais entidades.;Relação
+Identificador único usado para buscar ou vincular dados.;Chave
+Tipo de chave que identifica um registro de forma exclusiva.;Primária
+Tipo de chave que cria vínculo de dependência entre tabelas.;Estrangeira
+Estrutura de dados que melhora incrivelmente a velocidade de busca.;Índice
+Termo em português para uma requisição de dados ao banco.;Consulta
+Comando SQL utilizado para recuperar e listar dados.;Select
+Comando SQL utilizado para adicionar um novo registro.;Insert
+Comando SQL utilizado para modificar ou atualizar dados existentes.;Update
+Comando SQL utilizado para excluir registros da tabela.;Delete
+Comando utilizado para confirmar e salvar uma transação com sucesso.;Commit
+Comando que cancela uma transação e desfaz as alterações.;Rollback
+Processo de organização de tabelas para evitar redundância de dados.;Normalização
+Procedimento de banco que é disparado automaticamente.;Gatilho
+Tabela virtual gerada dinamicamente com base em uma consulta.;Visão
+Organização ou estrutura lógica de um banco de dados.;Esquema
+Regra aplicada a uma coluna para garantir a integridade dos dados.;Restrição
+Modelo mais comum de banco de dados baseado em tabelas e chaves.;Relacional
+Operação em português utilizada para unir duas tabelas.;Junção

@@ -1,0 +1,15 @@
+Estrutura que controla o que entra e sai da célula.;Membrana
+Centro de comando que abriga o material genético.;Núcleo
+Fluido gelatinoso onde as organelas estão mergulhadas.;Citoplasma
+Organela responsável pela respiração e energia celular.;Mitocôndria
+Estrutura responsável por sintetizar proteínas.;Ribossomo
+Envoltório que protege o núcleo celular.;Carioteca
+Responsável pela digestão intracelular.;Lisossomo
+Organela que realiza a fotossíntese nas plantas.;Cloroplasto
+Bolsa que armazena água, muito grande em plantas.;Vacúolo
+Estrutura cilíndrica que atua na divisão celular animal.;Centríolo
+Estrutura curta em formato de pelo usada para locomoção.;Cílios
+Cauda longa usada para locomoção, comum em espermatozoides.;Flagelo
+Região densa dentro do núcleo que fabrica ribossomos.;Nucléolo
+Estrutura espiralada em forma de X composta por DNA.;Cromossomo
+Anel de DNA extra encontrado em bactérias.;Plasmídio

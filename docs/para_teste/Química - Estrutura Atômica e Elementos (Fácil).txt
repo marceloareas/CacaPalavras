@@ -1,0 +1,12 @@
+Partícula de carga positiva no núcleo do átomo.;Próton
+Partícula de carga negativa ao redor do núcleo.;Elétron
+Partícula sem carga elétrica no núcleo do átomo.;Nêutron
+Elemento central que forma a base da química orgânica.;Carbono
+Gás nobre frequentemente utilizado em letreiros luminosos.;Neônio
+Único metal que se apresenta em estado líquido à temperatura ambiente.;Mercúrio
+Substância aquosa que apresenta pH menor do que 7.;Ácido
+Mistura homogênea composta por um soluto e um solvente.;Solução
+Ligação química caracterizada pelo compartilhamento de elétrons.;Covalente
+Gás reativo essencial para o processo de respiração celular.;Oxigênio
+Elemento químico mais leve e abundante em todo o universo.;Hidrogênio
+Região central, densa e muito pequena de um átomo.;Núcleo

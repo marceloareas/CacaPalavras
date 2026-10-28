@@ -1,0 +1,20 @@
+Gás fundamental para a respiração dos seres humanos.;Oxigênio
+Elemento químico mais leve e abundante em todo o universo.;Hidrogênio
+Elemento central que forma a base da química orgânica.;Carbono
+Gás mais abundante na atmosfera terrestre.;Nitrogênio
+Gás nobre muito leve utilizado para encher balões flutuantes.;Hélio
+Metal altamente reativo presente no sal de cozinha.;Sódio
+Metal leve amplamente utilizado em baterias de celular.;Lítio
+Mineral essencial encontrado no leite, importante para os ossos.;Cálcio
+Íon de símbolo K importante para a contração muscular.;Potássio
+Metal de transição presente na hemoglobina do nosso sangue.;Ferro
+Excelente metal condutor de cor avermelhada usado em fios.;Cobre
+Metal precioso muito usado em joias de símbolo Ag.;Prata
+Metal nobre e valioso de coloração amarela de símbolo Au.;Ouro
+Único metal que se apresenta em estado líquido na natureza.;Mercúrio
+Metal pesado e tóxico muito utilizado em baterias de carro.;Chumbo
+Elemento radioativo que serve de combustível em usinas nucleares.;Urânio
+Halogênio adicionado à água e pastas de dente contra cáries.;Flúor
+Gás de cheiro forte usado no tratamento de água de piscinas.;Cloro
+Halogênio arroxeado usado em ferimentos como antisséptico.;Iodo
+Gás nobre popularmente utilizado em letreiros coloridos.;Neônio
