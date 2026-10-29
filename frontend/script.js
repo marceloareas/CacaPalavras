@@ -131,7 +131,7 @@ async function carregarMeusJogos() {
 }
 
 async function deletarJogo(id_jogo) {
-    if(confirm("Tem certeza que deseja excluir este caça-palavras?")) {
+    if (await confirmarAcao("Tem certeza que deseja excluir este caça-palavras? Essa ação não pode ser desfeita.", { titulo: "Excluir caça-palavras", textoOk: "Excluir", perigo: true })) {
         await fetch(`${API_URL}/jogos/${id_jogo}`, { method: 'DELETE' });
         carregarMeusJogos();
     }
@@ -210,7 +210,7 @@ function renderizarListaExistentes(tipo, dados) {
 async function goToStep(step) {
     if (step === 2) {
         const digitado = document.getElementById("input-disciplina").value.trim();
-        if(!digitado) return alert("Por favor, preencha a disciplina.");
+        if(!digitado) return mostrarAviso("Por favor, preencha a disciplina.", { titulo: "Campo obrigatório" });
         
         const existente = disciplinasSalvas.find(d => d.toLowerCase() === digitado.toLowerCase());
         
@@ -229,7 +229,7 @@ async function goToStep(step) {
     
     if (step === 3) {
         const digitadoAssunto = document.getElementById("input-assunto").value.trim();
-        if(!digitadoAssunto) return alert("Por favor, preencha o assunto.");
+        if(!digitadoAssunto) return mostrarAviso("Por favor, preencha o assunto.", { titulo: "Campo obrigatório" });
 
         const existenteAssunto = assuntosSalvos.find(a => a.toLowerCase() === digitadoAssunto.toLowerCase());
         
@@ -251,7 +251,7 @@ async function goToStep(step) {
         
         if (qtdAtual > max) {
             const excesso = qtdAtual - max;
-            alert(`ATENÇÃO: A dificuldade ${gameData.dificuldade} permite no máximo ${max} palavras, mas seu jogo atual tem ${qtdAtual}.\n\nPara conseguir salvar, você deverá remover ${excesso} palavra(s) da lista ou voltar e aumentar a dificuldade.`);
+            mostrarAviso(`A dificuldade ${gameData.dificuldade} permite no máximo ${max} palavras, mas seu jogo atual tem ${qtdAtual}.\n\nPara conseguir salvar, você deverá remover ${excesso} palavra(s) da lista ou voltar e aumentar a dificuldade.`, { titulo: "Palavras demais para este nível" });
         }
     }
 
@@ -339,7 +339,7 @@ function removerAcentos(texto) {
 function addWord() {
     const max = LIMITES[gameData.dificuldade];
     if (parEmEdicao === null && gameData.perguntas_respostas.length >= max) {
-        return alert(`Máximo de ${max} palavras atingido para o nível ${gameData.dificuldade}!`);
+        return mostrarAviso(`Máximo de ${max} palavras atingido para o nível ${gameData.dificuldade}!`, { titulo: "Limite de palavras" });
     }
     
     const pergunta = document.getElementById("input-pergunta").value;
@@ -347,14 +347,14 @@ function addWord() {
     const resposta = document.getElementById("input-resposta").value.trim();
     
     if (!pergunta || !resposta || resposta.includes(" ")) {
-        return alert("Preencha dica e resposta. A resposta deve ser uma palavra única sem espaços.");
+        return mostrarAviso("Preencha dica e resposta. A resposta deve ser uma palavra única sem espaços.", { titulo: "Verifique os dados" });
     }
     const semAcento = removerAcentos(resposta);
     if (!/^[A-Za-z]+$/.test(semAcento)) {
-        return alert("A resposta deve ter apenas letras (acentos são aceitos), sem números ou símbolos.");
+        return mostrarAviso("A resposta deve ter apenas letras (acentos são aceitos), sem números ou símbolos.", { titulo: "Resposta inválida" });
     }
     if (semAcento.length > MAX_LETRAS) {
-        return alert(`A resposta deve ter no máximo ${MAX_LETRAS} letras.`);
+        return mostrarAviso(`A resposta deve ter no máximo ${MAX_LETRAS} letras.`, { titulo: "Resposta inválida" });
     }
 
     if (parEmEdicao !== null) {
@@ -426,9 +426,9 @@ function importarArquivoTXT(event) {
         document.getElementById('input-arquivo-txt').value = '';
 
         if (importados > 0 && ignorados === 0) {
-            alert(`✅ Sucesso! ${importados} palavras importadas do arquivo.`);
+            mostrarAviso(`${importados} palavras importadas do arquivo.`, { titulo: "Importação concluída", tipo: "sucesso" });
         } else {
-            alert(`Importação concluída:\n✅ ${importados} inseridos com sucesso.\n⚠️ ${ignorados} ignorados (formato errado, resposta inválida ou limite atingido).`);
+            mostrarAviso(`✅ ${importados} inseridos com sucesso.\n⚠️ ${ignorados} ignorados (formato errado, resposta inválida ou limite atingido).`, { titulo: "Importação concluída", tipo: importados > 0 ? "aviso" : "erro" });
         }
     };
     
@@ -437,11 +437,11 @@ function importarArquivoTXT(event) {
 
 async function salvarJogo() {
     if (gameData.perguntas_respostas.length < 10) {
-        return alert("O sistema exige no mínimo 10 palavras cadastradas!");
+        return mostrarAviso("O sistema exige no mínimo 10 palavras cadastradas!", { titulo: "Ainda faltam palavras" });
     }
     const max = LIMITES[gameData.dificuldade];
     if (gameData.perguntas_respostas.length > max) {
-        return alert(`O nível ${gameData.dificuldade} permite no máximo ${max} palavras. Remova algumas ou mude a dificuldade.`);
+        return mostrarAviso(`O nível ${gameData.dificuldade} permite no máximo ${max} palavras. Remova algumas ou mude a dificuldade.`, { titulo: "Palavras demais para este nível" });
     }
     
     const payload = { id_professor: parseInt(currentUser), ...gameData };
@@ -466,7 +466,7 @@ async function salvarJogo() {
         showScreen('screen-preview');
     } else {
         const err = await res.json();
-        alert("Erro ao salvar: " + err.detail);
+        mostrarAviso(typeof err.detail === "string" ? err.detail : "Confira os dados e tente de novo.", { titulo: "Erro ao salvar", tipo: "erro" });
     }
 }
 
@@ -590,7 +590,7 @@ function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
     document.getElementById("barra-jogo").style.display = "none";
     document.getElementById("btn-jogar").innerText = "🎮 Jogar este caça-palavras";
     document.getElementById("btn-toggle-respostas").style.display = perfilAluno ? "none" : "";
-    document.querySelector(".selo-teste").textContent = perfilAluno ? "Por enquanto, sem potuação" : "MODO TESTE";
+    document.querySelector(".selo-teste").textContent = perfilAluno ? "Por enquanto, sem pontuação" : "MODO TESTE";
     atualizarBotaoRespostas();
     aplicarDestaques();
 }
@@ -739,8 +739,7 @@ function confirmarSelecao() {
 
     // verifica se o aluno selecionou uma dica antes de confirmar a palavra
     if (dicaSelecionada === null) {
-        somIncorreto.currentTime = 0;
-        somIncorreto.play();
+        tocarSom(somIncorreto);
         removerBalao();
         limparSelecao();
         mostrarMensagemJogo("⚠️ Selecione uma dica na lista à esquerda antes de confirmar!", "erro");
@@ -755,8 +754,7 @@ function confirmarSelecao() {
     removerBalao();
 
     if (letras === respostaCerta || invertida === respostaCerta) {
-        somCorreto.currentTime = 0;
-        somCorreto.play();
+        tocarSom(somCorreto);
         achadas.set(dicaSelecionada, selecao.cels);
         const indexAcerto = dicaSelecionada;
         dicaSelecionada = null; // reseta a seleção para obrigar a clicar na próxima dica
@@ -771,8 +769,7 @@ function confirmarSelecao() {
             mostrarMensagemJogo(`Boa! Achou "${perguntas[indexAcerto].resposta}". Escolha a próxima dica.`, "sucesso");
         }
     } else {
-        somIncorreto.currentTime = 0;
-        somIncorreto.play(); 
+        tocarSom(somIncorreto);
         pintarSelecao(true);
         const errada = selecao;
         setTimeout(() => { if (selecao === errada) limparSelecao(); }, 450);
@@ -804,7 +801,7 @@ function soltarArrasto(e) {
     if (!arrasto || !selecao) return;
     moverArrasto(e);
     arrasto = null;
-    selecao.confirmando = true; // agora espera o ✔ (ou ✖)
+    selecao.confirmando = true;
     mostrarBalao();
 }
 
@@ -852,7 +849,7 @@ function copiarCodigo(codigo, botao) {
         let ok = false;
         try { ok = document.execCommand("copy"); } catch (_) {}
         t.remove();
-        if (ok) feito(); else prompt("Copie o código:", codigo);
+        if (ok) feito(); else mostrarAviso(`Copie o código manualmente: ${codigo}`, { titulo: "Copiar código", tipo: "info" });
     };
     if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(codigo).then(feito, alternativa);
@@ -972,7 +969,7 @@ async function buscarPorCodigo() {
             fetch(`${API_URL}/jogos?codigo=${encodeURIComponent(codigo)}`).then(r => r.json()),
         ]);
         if (minha !== buscaFiltros) return;
-        preencherFiltros(filtros, {}); // tudo em "Todos", com as opções completas
+        preencherFiltros(filtros, {});
         renderizarJogosAluno(jogos, codigo);
     } catch (_) {
         if (minha === buscaFiltros) msg.textContent = "Não foi possível buscar agora. Tente de novo.";
@@ -1013,3 +1010,179 @@ function renderizarJogosAluno(jogos, codigo = null) {
         ul.appendChild(li);
     });
 }
+
+// ---------- Janelas de aviso e confirmação (no lugar de alert / confirm do navegador) ----------
+// mostrarAviso(mensagem, { titulo, tipo })  -> Promise que resolve quando o usuário fecha
+// confirmarAcao(mensagem, { titulo, textoOk, textoCancelar, perigo })  -> Promise<boolean>
+// tipo: "sucesso" | "erro" | "aviso" | "info"
+const ICONES_MODAL = { sucesso: "✔", erro: "✖", aviso: "!", info: "i" };
+const TITULOS_MODAL = { sucesso: "Tudo certo!", erro: "Ops!", aviso: "Atenção", info: "Aviso" };
+let filaModal = Promise.resolve(); // se vierem vários avisos seguidos, aparecem um de cada vez
+
+function exibirModal({ mensagem, titulo, tipo, confirmar, textoOk, textoCancelar, perigo }) {
+    return new Promise(resolve => {
+        const overlay = document.getElementById("modal-overlay");
+        const caixa = overlay.querySelector(".modal");
+        const acoes = document.getElementById("modal-acoes");
+        const focoAnterior = document.activeElement;
+
+        caixa.dataset.tipo = tipo;
+        document.getElementById("modal-icone").textContent = ICONES_MODAL[tipo] || "i";
+        // textContent: o texto (que pode vir do professor ou do servidor) nunca é interpretado como HTML
+        document.getElementById("modal-titulo").textContent = titulo || TITULOS_MODAL[tipo];
+        document.getElementById("modal-corpo").textContent = mensagem;
+        acoes.innerHTML = "";
+
+        const aoTeclar = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault(); e.stopPropagation();
+                fechar(false);
+            } else if (e.key === "Tab") { // o foco fica preso dentro da janela
+                e.preventDefault(); e.stopPropagation();
+                const botoes = [...acoes.querySelectorAll("button")];
+                const i = botoes.indexOf(document.activeElement);
+                botoes[e.shiftKey ? (i <= 0 ? botoes.length - 1 : i - 1) : (i + 1) % botoes.length].focus();
+            } else if (e.key === "Enter") {
+                e.stopPropagation(); // o Enter só aciona o botão da janela (e não o atalho do jogo por baixo)
+            }
+        };
+        const aoClicarFora = (e) => { if (e.target === overlay) fechar(false); };
+        function fechar(valor) {
+            document.removeEventListener("keydown", aoTeclar, true);
+            overlay.removeEventListener("mousedown", aoClicarFora);
+            overlay.hidden = true;
+            document.body.style.overflow = "";
+            if (focoAnterior && focoAnterior.focus) focoAnterior.focus();
+            resolve(valor);
+        }
+
+        let botaoOk, botaoCancelar;
+        if (confirmar) {
+            botaoCancelar = document.createElement("button");
+            botaoCancelar.type = "button";
+            botaoCancelar.className = "btn-voltar";
+            botaoCancelar.textContent = textoCancelar;
+            botaoCancelar.onclick = () => fechar(false);
+            acoes.appendChild(botaoCancelar);
+        }
+        botaoOk = document.createElement("button");
+        botaoOk.type = "button";
+        botaoOk.textContent = textoOk;
+        if (perigo) botaoOk.classList.add("modal-perigo");
+        botaoOk.onclick = () => fechar(true);
+        acoes.appendChild(botaoOk);
+
+        document.addEventListener("keydown", aoTeclar, true);
+        overlay.addEventListener("mousedown", aoClicarFora);
+        document.body.style.overflow = "hidden";
+        overlay.hidden = false;
+        (perigo && botaoCancelar ? botaoCancelar : botaoOk).focus(); // numa ação perigosa o foco começa em "Cancelar"
+    });
+}
+
+function enfileirarModal(opcoes) {
+    const p = filaModal.then(() => exibirModal(opcoes));
+    filaModal = p;
+    return p;
+}
+
+function mostrarAviso(mensagem, { titulo = "", tipo = "aviso", textoOk = "OK" } = {}) {
+    return enfileirarModal({ mensagem, titulo, tipo, confirmar: false, textoOk });
+}
+
+function confirmarAcao(mensagem, { titulo = "Confirmar", textoOk = "Confirmar", textoCancelar = "Cancelar", perigo = false } = {}) {
+    return enfileirarModal({ mensagem, titulo, tipo: "aviso", confirmar: true, textoOk, textoCancelar, perigo });
+}
+
+// ---------- Configurações (sons) ----------
+const CONFIG_PADRAO = { sons: true, volume: 0.8 };
+let configuracoes = { ...CONFIG_PADRAO };
+
+function carregarConfiguracoes() {
+    try {
+        const salvo = JSON.parse(localStorage.getItem("wordhunt_config") || "null");
+        if (salvo) {
+            const v = Number(salvo.volume);
+            configuracoes = {
+                sons: salvo.sons !== false,
+                volume: Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : CONFIG_PADRAO.volume,
+            };
+        }
+    } catch (_) { /* sem localStorage (janela anônima, etc.): vale o padrão nesta visita */ }
+}
+
+function salvarConfiguracoes() {
+    try { localStorage.setItem("wordhunt_config", JSON.stringify(configuracoes)); } catch (_) {}
+}
+
+// Toca um efeito respeitando as configurações. Se o navegador bloquear o áudio, o jogo segue normalmente.
+function tocarSom(som) {
+    if (!configuracoes.sons) return;
+    som.volume = configuracoes.volume;
+    som.currentTime = 0;
+    const p = som.play();
+    if (p && p.catch) p.catch(() => {});
+}
+
+function atualizarTelaConfig() {
+    const pct = Math.round(configuracoes.volume * 100);
+    document.getElementById("cfg-sons").checked = configuracoes.sons;
+    document.getElementById("cfg-volume").value = pct;
+    document.getElementById("cfg-volume-valor").textContent = `${pct}%`;
+    // com o som desligado, volume e testes ficam desativados
+    document.getElementById("cfg-volume").disabled = !configuracoes.sons;
+    document.getElementById("cfg-teste-correto").disabled = !configuracoes.sons;
+    document.getElementById("cfg-teste-incorreto").disabled = !configuracoes.sons;
+    document.getElementById("cfg-linha-volume").classList.toggle("desativada", !configuracoes.sons);
+    document.getElementById("cfg-linha-teste").classList.toggle("desativada", !configuracoes.sons);
+}
+
+function alterarSons(ligado) {
+    configuracoes.sons = ligado;
+    salvarConfiguracoes();
+    atualizarTelaConfig();
+}
+
+function alterarVolume(valor) {
+    configuracoes.volume = Math.min(1, Math.max(0, Number(valor) / 100));
+    document.getElementById("cfg-volume-valor").textContent = `${Math.round(configuracoes.volume * 100)}%`;
+    salvarConfiguracoes();
+}
+
+function testarSom(tipo) {
+    tocarSom(tipo === "correto" ? somCorreto : somIncorreto);
+}
+
+function abrirConfiguracoes() {
+    atualizarTelaConfig();
+    showScreen("screen-config");
+}
+
+// ---------- Créditos ----------
+const CREDITOS = {
+    descricao: "O WordHunt foi um jogo desenvolvido para a disciplina Projeto e Construção de Sistemas, com o objetivo de ser um jogo educativo interdisciplinar, onde o jogador pode testar seus conhecimentos.",
+    equipe: ["Clara Ribeiro Barreto", "Julia Iacovellis Pinho", "Kaio da Silva dos Santos"],
+    professor: "Marcelo Areas Rodrigues da Silva",
+    disciplina: "Projeto e Construção de Sistemas · CEFET/RJ",
+};
+
+function abrirCreditos() {
+    document.getElementById("creditos-descricao").textContent = CREDITOS.descricao;
+    const lista = document.getElementById("creditos-equipe");
+    lista.innerHTML = "";
+    CREDITOS.equipe.forEach(nome => {
+        const li = document.createElement("li");
+        li.textContent = nome;
+        lista.appendChild(li);
+    });
+    document.getElementById("creditos-professor").textContent = CREDITOS.professor;
+    document.getElementById("creditos-disciplina").textContent = CREDITOS.disciplina;
+    showScreen("screen-creditos");
+}
+
+// Configurações e Créditos voltam para o painel de quem está logado
+function voltarDoMenuSecundario() {
+    showScreen(perfilAluno ? "screen-menu-aluno" : "screen-menu-prof");
+}
+
+carregarConfiguracoes();

@@ -38,6 +38,8 @@
             <h2>Painel do Aluno</h2>
             <div class="btn-group" style="flex-direction: column;">
                 <button onclick="abrirFiltrosAluno()">Jogar</button>
+                <button onclick="abrirConfiguracoes()">Configurações</button>
+                <button onclick="abrirCreditos()">Créditos</button>
             </div>
             <button class="btn-voltar" style="margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
         </div>
@@ -85,6 +87,51 @@
             </div>
             <ul id="lista-jogos-aluno" class="list-container" style="max-height: 420px;"></ul>
             <button class="btn-voltar" style="margin-top: 20px;" onclick="showScreen('screen-menu-aluno')">Voltar à Página Inicial</button>
+        </div>
+
+        <!-- TELA CONFIGURAÇÕES (sons) -->
+        <div id="screen-config" class="screen">
+            <h2>Configurações</h2>
+            <div class="cfg-card">
+                <h3>Sons</h3>
+                <div class="cfg-linha">
+                    <span id="cfg-sons-rotulo">Efeitos sonoros</span>
+                    <label class="switch">
+                        <input type="checkbox" id="cfg-sons" aria-labelledby="cfg-sons-rotulo" onchange="alterarSons(this.checked)">
+                        <span class="switch-trilho"></span>
+                    </label>
+                </div>
+                <div class="cfg-linha" id="cfg-linha-volume">
+                    <label for="cfg-volume">Volume</label>
+                    <div class="cfg-volume-wrap">
+                        <input type="range" id="cfg-volume" min="0" max="100" step="5" oninput="alterarVolume(this.value)">
+                        <span id="cfg-volume-valor">80%</span>
+                    </div>
+                </div>
+                <div class="cfg-linha" id="cfg-linha-teste">
+                    <span>Testar</span>
+                    <div class="cfg-testes">
+                        <button type="button" id="cfg-teste-correto" class="btn-pequeno" onclick="testarSom('correto')">▶ Acerto</button>
+                        <button type="button" id="cfg-teste-incorreto" class="btn-pequeno" onclick="testarSom('incorreto')">▶ Erro</button>
+                    </div>
+                </div>
+                <p class="cfg-nota">As configurações ficam salvas neste navegador.</p>
+            </div>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="voltarDoMenuSecundario()">Voltar à Página Inicial</button>
+        </div>
+
+        <!-- TELA CRÉDITOS (o texto e os nomes ficam na constante CREDITOS do script.js) -->
+        <div id="screen-creditos" class="screen">
+            <h2>Créditos</h2>
+            <div class="cfg-card creditos-card">
+                <p id="creditos-descricao"></p>
+                <h3>Desenvolvido por</h3>
+                <ul id="creditos-equipe" class="creditos-lista"></ul>
+                <h3>Professor da disciplina</h3>
+                <p id="creditos-professor" class="creditos-prof"></p>
+                <p id="creditos-disciplina" class="cfg-nota"></p>
+            </div>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="voltarDoMenuSecundario()">Voltar à Página Inicial</button>
         </div>
 
         <!-- BARRA DE PROGRESSO -->
@@ -221,6 +268,15 @@
             <div style="display: flex; justify-content: center;">
                 <button id="btn-preview-voltar" style="margin-top: 30px; max-width: 400px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
             </div>
+        </div>
+    </div>
+    <!-- JANELA DE AVISO / CONFIRMAÇÃO (no lugar do alert e do confirm do navegador) -->
+    <div id="modal-overlay" class="modal-overlay" hidden>
+        <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-titulo" aria-describedby="modal-corpo" data-tipo="info">
+            <div id="modal-icone" class="modal-icone" aria-hidden="true">i</div>
+            <h3 id="modal-titulo" class="modal-titulo"></h3>
+            <p id="modal-corpo" class="modal-corpo"></p>
+            <div id="modal-acoes" class="modal-acoes"></div>
         </div>
     </div>
     <script src="script.js"></script>
