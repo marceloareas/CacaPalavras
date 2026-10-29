@@ -260,6 +260,41 @@ button:active {
 .painel-perguntas li.achada .cor, .painel-perguntas li.achada .resposta-par { display: block; }
 .painel-perguntas li.achada .texto-dica { text-decoration: line-through; color: #666; }
 
+/* ---------- Área do aluno: filtros ---------- */
+.filtros-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 15px; }
+.filtro-label { display: block; font-size: 13px; font-weight: bold; margin-bottom: -4px; }
+.filtros-barra { display: flex; justify-content: space-between; align-items: center; margin: 5px 0 10px; font-size: 14px; }
+.btn-pequeno { flex: none; padding: 8px 14px; font-size: 14px; }
+.card-jogo .card-detalhe { font-size: 13px; color: #555; margin-top: 4px; }
+.card-jogo button { flex: none; padding: 8px 22px; font-size: 14px; margin-left: 12px; }
+@media (max-width: 700px) { .filtros-grid { grid-template-columns: 1fr; } }
+
+/* Busca por código: campo fino, à direita, abaixo de "Dificuldade", com a lupa dentro do campo */
+.busca-codigo { grid-column: 2; justify-self: end; width: 50%; min-width: 230px; }
+.campo-busca { position: relative; }
+.campo-busca input {
+    height: 40px; margin: 8px 0; padding: 0 44px 0 14px;
+    border-radius: 14px; font-size: 15px;
+    text-transform: uppercase; letter-spacing: 2px;
+}
+.campo-busca input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 600; opacity: 0.55; }
+.btn-lupa {
+    position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; padding: 0; flex: none;
+    background: transparent; border: none; box-shadow: none; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+}
+.btn-lupa:hover { background-color: rgba(32, 32, 32, 0.1); }
+.btn-lupa:active { transform: translateY(-50%); box-shadow: none; }
+.codigo-msg { min-height: 18px; margin: -2px 0 4px 4px; font-size: 13px; font-weight: 600; color: #c0392b; }
+@media (max-width: 700px) { .busca-codigo { grid-column: 1; justify-self: stretch; width: 100%; min-width: 0; } }
+
+/* Código do jogo (tela do professor) */
+.codigo-jogo { font-family: monospace; font-size: 1.1em; letter-spacing: 2px; background-color: #f3ece4; border: 2px solid #202020; border-radius: 8px; padding: 1px 8px; }
+.preview-codigo { text-align: center; margin: -10px 0 15px; font-size: 14px; }
+.btn-copiar { margin-left: 8px; padding: 4px 12px; font-size: 13px; box-shadow: 2px 2px 0 #202020; border-radius: 12px; }
+.card-codigo { font-size: 13px; margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+
 /* Telas estreitas: dicas em cima, grade embaixo */
 @media (max-width: 900px) {
     .preview-layout { flex-direction: column; }

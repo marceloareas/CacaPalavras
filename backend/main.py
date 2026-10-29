@@ -1,15 +1,26 @@
 import os
+import re
 import random
+import secrets
 import string
+import time
+from contextlib import asynccontextmanager
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import psycopg2
+from psycopg2 import errors as pg_errors
 from psycopg2.extras import RealDictCursor
 import json
 import unicodedata
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app):
+    preparar_banco()  # garante a coluna "codigo" (ver abaixo) antes de atender qualquer requisição
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,6 +33,51 @@ DB_URL = os.getenv("DATABASE_URL", "postgresql://admin:adminpassword@localhost:5
 
 def get_db_connection():
     return psycopg2.connect(DB_URL, cursor_factory=RealDictCursor)
+
+# ---------- Código do jogo ----------
+# Cada caça-palavras tem um código curto e único, para o professor divulgar e o aluno digitar.
+# O alfabeto não tem I, L, O, 0 e 1 (confundem na hora de digitar): 31 símbolos ^ 6 posições ≈ 887 milhões.
+ALFABETO_CODIGO = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+TAMANHO_CODIGO = 6
+CONSTRAINT_CODIGO = "caca_palavras_codigo_key"  # nome que o Postgres dá ao UNIQUE da coluna "codigo"
+
+def gerar_codigo():
+    return "".join(secrets.choice(ALFABETO_CODIGO) for _ in range(TAMANHO_CODIGO))
+
+def normalizar_codigo(texto):
+    """O aluno pode digitar em minúsculas, com espaço ou com hífen (k7m-4qx): tudo vira K7M4QX."""
+    return re.sub(r"[^A-Za-z0-9]", "", texto or "").upper()
+
+def preparar_banco():
+    """Cria a coluna "codigo" se ela ainda não existir e dá um código aos jogos que não têm.
+    Roda sempre que o backend sobe e é segura para repetir. Por isso um banco já existente continua
+    funcionando sem precisar de 'docker compose down -v'. (Num banco novo a coluna já vem do init.sql.)"""
+    ultimo_erro = None
+    for _ in range(40):  # o Postgres pode demorar alguns segundos para aceitar conexões
+        try:
+            conn = get_db_connection()
+            break
+        except psycopg2.OperationalError as e:
+            ultimo_erro = e
+            time.sleep(1.5)
+    else:
+        raise RuntimeError(f"Banco indisponível: {ultimo_erro}")
+    try:
+        cur = conn.cursor()
+        cur.execute("ALTER TABLE Caca_Palavras ADD COLUMN IF NOT EXISTS codigo VARCHAR(8) UNIQUE;")
+        cur.execute("SELECT id_jogo FROM Caca_Palavras WHERE codigo IS NULL;")
+        sem_codigo = [r["id_jogo"] for r in cur.fetchall()]
+        for id_jogo in sem_codigo:
+            while True:  # tenta de novo no caso (raríssimo) de sortear um código que já existe
+                codigo = gerar_codigo()
+                cur.execute("SELECT 1 FROM Caca_Palavras WHERE codigo = %s;", (codigo,))
+                if not cur.fetchone():
+                    break
+            cur.execute("UPDATE Caca_Palavras SET codigo = %s WHERE id_jogo = %s;", (codigo, id_jogo))
+        cur.execute("ALTER TABLE Caca_Palavras ALTER COLUMN codigo SET NOT NULL;")
+        conn.commit()
+    finally:
+        conn.close()
 
 class JogoCreate(BaseModel):
     id_professor: int
@@ -140,22 +196,108 @@ def criar_jogo(jogo: JogoCreate):
     matriz, pares = preparar_matriz(jogo)  # valida e gera a grade antes de abrir o banco
     conn = get_db_connection()
     cur = conn.cursor()
-    
+
     try:
-        cur.execute("""
-            INSERT INTO Caca_Palavras (id_professor, disciplina, assunto, dificuldade, perguntas_respostas, matriz_letras)
-            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_jogo;
-        """, (jogo.id_professor, jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(pares), json.dumps(matriz)))
-        
-        id_jogo = cur.fetchone()['id_jogo']
-        conn.commit()
+        for _ in range(5):  # a cada tentativa um código novo; só repete se o código sorteado já existir
+            codigo = gerar_codigo()
+            try:
+                cur.execute("""
+                    INSERT INTO Caca_Palavras (id_professor, disciplina, assunto, dificuldade, perguntas_respostas, matriz_letras, codigo)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id_jogo;
+                """, (jogo.id_professor, jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(pares), json.dumps(matriz), codigo))
+                id_jogo = cur.fetchone()['id_jogo']
+                conn.commit()
+                break
+            except pg_errors.UniqueViolation as e:
+                conn.rollback()
+                if e.diag.constraint_name != CONSTRAINT_CODIGO:
+                    raise  # é a regra disciplina + assunto + dificuldade: cai no erro abaixo
+        else:
+            raise RuntimeError("Não foi possível gerar um código único.")
     except Exception as e:
         conn.rollback()
         raise HTTPException(status_code=400, detail="Erro ao salvar jogo. Verifique se o assunto já existe para esta disciplina.")
     finally:
         conn.close()
-        
-    return {"id_jogo": id_jogo, "matriz": matriz, "perguntas_respostas": pares}
+
+    return {"id_jogo": id_jogo, "codigo": codigo, "matriz": matriz, "perguntas_respostas": pares}
+
+# ---------- Filtros da área do aluno (RN05): professor, disciplina, assunto e dificuldade ----------
+def _where_filtros(professor, disciplina, assunto, dificuldade, ignorar=None):
+    """Monta o WHERE com os filtros informados. 'ignorar' tira um dos filtros (usado nas listas de opções)."""
+    cond, params = [], []
+    if professor is not None and ignorar != "professor":
+        cond.append("c.id_professor = %s")
+        params.append(professor)
+    if disciplina and ignorar != "disciplina":
+        cond.append("c.disciplina = %s")
+        params.append(disciplina)
+    if assunto and ignorar != "assunto":
+        cond.append("c.assunto = %s")
+        params.append(assunto)
+    if dificuldade and ignorar != "dificuldade":
+        cond.append("c.dificuldade = %s")
+        params.append(dificuldade)
+    return (" WHERE " + " AND ".join(cond)) if cond else "", params
+
+def _validar_dificuldade(dificuldade):
+    if dificuldade and dificuldade not in CONFIG:
+        raise HTTPException(status_code=400, detail="Dificuldade inválida.")
+
+@app.get("/api/filtros")
+def get_filtros(professor: Optional[int] = None, disciplina: Optional[str] = None,
+                assunto: Optional[str] = None, dificuldade: Optional[str] = None):
+    """Opções dos quatro filtros, em cascata: cada lista respeita os OUTROS três filtros já escolhidos.
+    Assim o aluno nunca monta uma combinação que não tem jogo."""
+    _validar_dificuldade(dificuldade)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        w, p = _where_filtros(professor, disciplina, assunto, dificuldade, ignorar="professor")
+        cur.execute("SELECT DISTINCT u.id_ludica AS id, u.nametag AS nome FROM Caca_Palavras c "
+                    "JOIN Usuario u ON u.id_ludica = c.id_professor" + w + " ORDER BY nome;", p)
+        professores = cur.fetchall()
+
+        w, p = _where_filtros(professor, disciplina, assunto, dificuldade, ignorar="disciplina")
+        cur.execute("SELECT DISTINCT c.disciplina FROM Caca_Palavras c" + w + " ORDER BY c.disciplina;", p)
+        disciplinas = [r["disciplina"] for r in cur.fetchall()]
+
+        w, p = _where_filtros(professor, disciplina, assunto, dificuldade, ignorar="assunto")
+        cur.execute("SELECT DISTINCT c.assunto FROM Caca_Palavras c" + w + " ORDER BY c.assunto;", p)
+        assuntos = [r["assunto"] for r in cur.fetchall()]
+
+        w, p = _where_filtros(professor, disciplina, assunto, dificuldade, ignorar="dificuldade")
+        cur.execute("SELECT DISTINCT c.dificuldade FROM Caca_Palavras c" + w + ";", p)
+        existentes = {r["dificuldade"] for r in cur.fetchall()}
+        dificuldades = [d for d in CONFIG if d in existentes]  # sempre na ordem Fácil, Médio, Difícil
+    finally:
+        conn.close()
+    return {"professores": professores, "disciplinas": disciplinas, "assuntos": assuntos, "dificuldades": dificuldades}
+
+@app.get("/api/jogos")
+def listar_jogos(professor: Optional[int] = None, disciplina: Optional[str] = None,
+                 assunto: Optional[str] = None, dificuldade: Optional[str] = None, codigo: Optional[str] = None):
+    """Lista os jogos que combinam com os filtros (todos opcionais). Só devolve dados de apresentação:
+    as respostas e a grade só vêm em GET /api/jogos/{id}.
+    Se vier 'codigo', a busca é só por ele (os outros filtros são ignorados): devolve 0 ou 1 jogo."""
+    _validar_dificuldade(dificuldade)
+    if codigo:
+        w, p = " WHERE c.codigo = %s", [normalizar_codigo(codigo)]
+    else:
+        w, p = _where_filtros(professor, disciplina, assunto, dificuldade)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT c.id_jogo, c.disciplina, c.assunto, c.dificuldade,
+                   u.id_ludica AS id_professor, u.nametag AS professor,
+                   jsonb_array_length(c.perguntas_respostas) AS qtd_palavras
+            FROM Caca_Palavras c JOIN Usuario u ON u.id_ludica = c.id_professor
+        """ + w + " ORDER BY c.disciplina, c.assunto, c.dificuldade;", p)
+        jogos = cur.fetchall()
+    finally:
+        conn.close()
+    return jogos
 
 @app.get("/api/disciplinas")
 def get_disciplinas_globais():
@@ -181,7 +323,7 @@ def get_assuntos_globais(disciplina: str):
 def get_jogos_professor(id_professor: int):
     conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("SELECT id_jogo, disciplina, assunto, dificuldade FROM Caca_Palavras WHERE id_professor = %s ORDER BY id_jogo DESC;", (id_professor,))
+    cur.execute("SELECT id_jogo, codigo, disciplina, assunto, dificuldade FROM Caca_Palavras WHERE id_professor = %s ORDER BY id_jogo DESC;", (id_professor,))
     jogos = cur.fetchall()
     conn.close()
     return jogos
@@ -217,8 +359,9 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
         cur.execute("""
             UPDATE Caca_Palavras 
             SET disciplina = %s, assunto = %s, dificuldade = %s, perguntas_respostas = %s, matriz_letras = %s
-            WHERE id_jogo = %s;
+            WHERE id_jogo = %s RETURNING codigo;
         """, (jogo.disciplina, jogo.assunto, jogo.dificuldade, json.dumps(pares), json.dumps(matriz), id_jogo))
+        atualizado = cur.fetchone()  # o código NÃO muda ao editar: quem já recebeu o código continua achando o jogo
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -226,4 +369,6 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
     finally:
         conn.close()
         
-    return {"id_jogo": id_jogo, "matriz": matriz, "perguntas_respostas": pares}
+    if not atualizado:
+        raise HTTPException(status_code=404, detail="Jogo não encontrado")
+    return {"id_jogo": id_jogo, "codigo": atualizado["codigo"], "matriz": matriz, "perguntas_respostas": pares}

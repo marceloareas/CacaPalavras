@@ -1,5 +1,6 @@
 const API_URL = "http://localhost:8000/api";
 let currentUser = null;
+let perfilAluno = false; // true quando quem entrou é aluno
 let editandoId = null; 
 let gameData = { disciplina: "", assunto: "", dificuldade: "Fácil", perguntas_respostas: [] };
 let disciplinasSalvas = [];
@@ -49,11 +50,8 @@ function updateProgressBar(step) {
 function login() {
     const select = document.getElementById("user-select");
     currentUser = select.value;
-    if (select.options[select.selectedIndex].text.includes("Professor")) {
-        showScreen('screen-menu-prof');
-    } else {
-        alert("Área do aluno ainda em desenvolvimento!");
-    }
+    perfilAluno = !select.options[select.selectedIndex].text.includes("Professor");
+    showScreen(perfilAluno ? 'screen-menu-aluno' : 'screen-menu-prof');
 }
 
 function voltarAoMenu() {
@@ -116,7 +114,11 @@ async function carregarMeusJogos() {
     const ul = document.getElementById("lista-meus-jogos");
     ul.innerHTML = jogos.map(j => `
         <li class="list-item" style="flex-direction: column; align-items: flex-start; gap: 10px;">
-            <div><b>Disciplina:</b> ${j.disciplina} <br><b>Assunto:</b> ${j.assunto} (${j.dificuldade})</div>
+            <div>
+                <b>Disciplina:</b> ${j.disciplina} <br><b>Assunto:</b> ${j.assunto} (${j.dificuldade})
+                ${j.codigo ? `<div class="card-codigo"><b>Código:</b> <span class="codigo-jogo">${j.codigo}</span>
+                    <button type="button" class="btn-pequeno btn-copiar" onclick="copiarCodigo('${j.codigo}', this)">Copiar</button></div>` : ""}
+            </div>
             <div style="display: flex; gap: 10px; width: 100%;">
                 <button onclick="visualizarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Visualizar</button>
                 <button onclick="jogarJogo(${j.id_jogo})" style="padding: 8px; font-size: 14px;">Jogar</button>
@@ -141,7 +143,8 @@ async function visualizarJogo(id_jogo, jogar = false) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = `Visualizando: ${data.assunto}`;
         mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade, data.assunto);
-        document.getElementById("btn-preview-voltar").onclick = carregarMeusJogos; 
+        mostrarCodigoNoPreview(data.codigo);
+        document.getElementById("btn-preview-voltar").onclick = perfilAluno ? () => showScreen('screen-filtros-aluno') : carregarMeusJogos; 
         showScreen('screen-preview');
         if (jogar) iniciarJogo();
     }
@@ -458,6 +461,7 @@ async function salvarJogo() {
         // Chama o renderizador passando a matriz gerada e as dicas originais
         // o backend devolve os pares já com a posição de cada resposta na grade
         mostrarPreview(data.matriz, data.perguntas_respostas || gameData.perguntas_respostas, gameData.dificuldade, gameData.assunto);
+        mostrarCodigoNoPreview(data.codigo); // é o código para o professor divulgar aos alunos
         document.getElementById("btn-preview-voltar").onclick = voltarAoMenu; 
         showScreen('screen-preview');
     } else {
@@ -585,6 +589,8 @@ function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
     layout.classList.remove("mostrando", "jogando");
     document.getElementById("barra-jogo").style.display = "none";
     document.getElementById("btn-jogar").innerText = "🎮 Jogar este caça-palavras";
+    document.getElementById("btn-toggle-respostas").style.display = perfilAluno ? "none" : "";
+    document.querySelector(".selo-teste").textContent = perfilAluno ? "Por enquanto, sem potuação" : "MODO TESTE";
     atualizarBotaoRespostas();
     aplicarDestaques();
 }
@@ -820,3 +826,190 @@ function inicializarJogoUI() {
     });
 }
 inicializarJogoUI();
+
+// ---------- Código do jogo (professor) ----------
+function mostrarCodigoNoPreview(codigo) {
+    const caixa = document.getElementById("preview-codigo");
+    caixa.style.display = (codigo && !perfilAluno) ? "block" : "none"; // o aluno não precisa ver
+    if (!codigo) return;
+    document.getElementById("preview-codigo-valor").textContent = codigo;
+    document.getElementById("btn-copiar-codigo").onclick = (e) => copiarCodigo(codigo, e.currentTarget);
+}
+
+function copiarCodigo(codigo, botao) {
+    const feito = () => {
+        const original = botao.textContent;
+        botao.textContent = "Copiado ✔";
+        setTimeout(() => { botao.textContent = original; }, 1500);
+    };
+    const alternativa = () => {  // navegadores sem a API de área de transferência (ex.: página em http fora do localhost)
+        const t = document.createElement("textarea");
+        t.value = codigo;
+        t.style.position = "fixed";
+        t.style.opacity = "0";
+        document.body.appendChild(t);
+        t.select();
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (_) {}
+        t.remove();
+        if (ok) feito(); else prompt("Copie o código:", codigo);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(codigo).then(feito, alternativa);
+    } else {
+        alternativa();
+    }
+}
+
+// ---------- Área do aluno: filtros por professor, disciplina, assunto e dificuldade (RN05) + busca por código ----------
+const ordenarPt = (a, b) => String(a).localeCompare(String(b), "pt-BR");
+const FILTROS = ["professor", "disciplina", "assunto", "dificuldade"]; // ids: filtro-<nome>
+const ORDEM_DIFICULDADE = ["Fácil", "Médio", "Difícil"];
+let buscaFiltros = 0; // descarta respostas antigas se o aluno mudar os filtros rápido
+
+function valoresFiltros() {
+    return Object.fromEntries(FILTROS.map(k => [k, document.getElementById(`filtro-${k}`).value]));
+}
+
+// Preenche um <select> e devolve o valor que ficou selecionado (volta para "Todos" se o antigo sumiu)
+function preencherFiltro(id, opcoes, selecionado, textoTodos) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    const todos = document.createElement("option");
+    todos.value = "";
+    todos.textContent = textoTodos;
+    sel.appendChild(todos);
+    opcoes.forEach(({ valor, texto }) => {
+        const o = document.createElement("option");
+        o.value = valor;
+        o.textContent = texto;
+        sel.appendChild(o);
+    });
+    sel.value = opcoes.some(o => String(o.valor) === selecionado) ? selecionado : "";
+    return sel.value;
+}
+
+// Preenche os quatro selects com as opções que o backend devolveu e devolve os valores que ficaram escolhidos
+function preencherFiltros(filtros, v) {
+    return {
+        professor: preencherFiltro("filtro-professor",
+            filtros.professores.slice().sort((a, b) => ordenarPt(a.nome, b.nome)).map(p => ({ valor: p.id, texto: p.nome })),
+            v.professor, "Todos os professores"),
+        disciplina: preencherFiltro("filtro-disciplina",
+            filtros.disciplinas.slice().sort(ordenarPt).map(d => ({ valor: d, texto: d })),
+            v.disciplina, "Todas as disciplinas"),
+        assunto: preencherFiltro("filtro-assunto",
+            filtros.assuntos.slice().sort(ordenarPt).map(a => ({ valor: a, texto: a })),
+            v.assunto, "Todos os assuntos"),
+        dificuldade: preencherFiltro("filtro-dificuldade",
+            filtros.dificuldades.slice().sort((a, b) => ORDEM_DIFICULDADE.indexOf(a) - ORDEM_DIFICULDADE.indexOf(b)).map(d => ({ valor: d, texto: d })),
+            v.dificuldade, "Todas as dificuldades"),
+    };
+}
+
+function limparCampoCodigo() {
+    document.getElementById("filtro-codigo").value = "";
+    document.getElementById("codigo-msg").textContent = "";
+}
+
+function abrirFiltrosAluno() {
+    FILTROS.forEach(k => { document.getElementById(`filtro-${k}`).innerHTML = ""; });
+    limparCampoCodigo();
+    showScreen('screen-filtros-aluno');
+    atualizarFiltrosAluno();
+}
+
+function limparFiltrosAluno() {
+    FILTROS.forEach(k => { document.getElementById(`filtro-${k}`).value = ""; });
+    limparCampoCodigo();
+    atualizarFiltrosAluno();
+}
+
+// O campo de código só aceita letras e números, sempre em maiúsculas (aceita colar "k7m-4qx")
+function formatarCampoCodigo(campo) {
+    const limpo = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    if (limpo !== campo.value) campo.value = limpo;
+}
+
+// As opções de cada filtro dependem dos outros três (o backend devolve só combinações que têm jogo).
+async function atualizarFiltrosAluno() {
+    limparCampoCodigo(); // mexeu nos filtros: a busca por código deixa de valer
+    const minha = ++buscaFiltros;
+    let v = valoresFiltros();
+    for (let tentativa = 0; tentativa < 3; tentativa++) {
+        const qs = new URLSearchParams();
+        Object.entries(v).forEach(([k, x]) => { if (x) qs.set(k, x); });
+        const [filtros, jogos] = await Promise.all([
+            fetch(`${API_URL}/filtros?${qs}`).then(r => r.json()),
+            fetch(`${API_URL}/jogos?${qs}`).then(r => r.json()),
+        ]);
+        if (minha !== buscaFiltros) return; // chegou uma busca mais nova
+
+        const novo = preencherFiltros(filtros, v);
+        if (FILTROS.every(k => novo[k] === v[k])) {
+            renderizarJogosAluno(jogos);
+            return;
+        }
+        v = novo; // algum filtro escolhido deixou de existir: busca de novo já sem ele
+    }
+}
+
+// Busca direta pelo código (Enter ou clique na lupa). Ignora os filtros: eles voltam para "Todos".
+async function buscarPorCodigo() {
+    const campo = document.getElementById("filtro-codigo");
+    const msg = document.getElementById("codigo-msg");
+    const codigo = campo.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    msg.textContent = "";
+    if (!codigo) {
+        msg.textContent = "Digite o código do jogo.";
+        campo.focus();
+        return;
+    }
+    const minha = ++buscaFiltros;
+    try {
+        const [filtros, jogos] = await Promise.all([
+            fetch(`${API_URL}/filtros`).then(r => r.json()),
+            fetch(`${API_URL}/jogos?codigo=${encodeURIComponent(codigo)}`).then(r => r.json()),
+        ]);
+        if (minha !== buscaFiltros) return;
+        preencherFiltros(filtros, {}); // tudo em "Todos", com as opções completas
+        renderizarJogosAluno(jogos, codigo);
+    } catch (_) {
+        if (minha === buscaFiltros) msg.textContent = "Não foi possível buscar agora. Tente de novo.";
+    }
+}
+
+function renderizarJogosAluno(jogos, codigo = null) {
+    document.getElementById("filtros-total").textContent = codigo
+        ? (jogos.length ? `Jogo encontrado pelo código ${codigo}` : "")
+        : (jogos.length === 1 ? "1 caça-palavras encontrado" : `${jogos.length} caça-palavras encontrados`);
+    const ul = document.getElementById("lista-jogos-aluno");
+    ul.innerHTML = "";
+    if (jogos.length === 0) {
+        const vazio = document.createElement("li");
+        vazio.className = "list-item";
+        vazio.textContent = codigo
+            ? `Nenhum caça-palavras com o código ${codigo}. Confira se digitou certo.`
+            : "Nenhum caça-palavras com esses filtros.";
+        ul.appendChild(vazio);
+        return;
+    }
+    jogos.forEach(jg => {
+        // textContent: o texto cadastrado pelo professor nunca é interpretado como HTML
+        const li = document.createElement("li");
+        li.className = "list-item card-jogo";
+        const info = document.createElement("div");
+        info.className = "texto-par";
+        const titulo = document.createElement("b");
+        titulo.textContent = `${jg.disciplina} · ${jg.assunto}`;
+        const detalhe = document.createElement("div");
+        detalhe.className = "card-detalhe";
+        detalhe.textContent = `${jg.professor} · ${jg.dificuldade} · ${jg.qtd_palavras} palavras`;
+        info.append(titulo, detalhe);
+        const botao = document.createElement("button");
+        botao.textContent = "Jogar";
+        botao.onclick = () => jogarJogo(jg.id_jogo);
+        li.append(info, botao);
+        ul.appendChild(li);
+    });
+}
