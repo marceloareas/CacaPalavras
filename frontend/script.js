@@ -12,11 +12,17 @@ const somIncorreto = new Audio("sons/incorreto.wav");
 // Limites do jogo. Devem ser iguais ao CONFIG do backend (backend/main.py).
 const LIMITES = { "Fácil": 15, "Médio": 20, "Difícil": 25 };
 const MAX_LETRAS = 15;
+// Pontuação do aluno (telas do protótipo: acerto +5, associação errada -5). PONTOS_ACERTO deve ser igual ao do backend/main.py.
+const PONTOS_ACERTO = 5;
+const PONTOS_ERRO = 5;
+let usuariosCadastrados = []; // lista vinda de /api/usuarios (usada para mostrar o perfil do aluno)
+let pontos = 0;               // pontuação da partida em andamento
 let parEmEdicao = null; // índice do par que está sendo editado (null = cadastrando um novo)
 
 window.onload = async () => {
     const res = await fetch(`${API_URL}/usuarios`);
     const usuarios = await res.json();
+    usuariosCadastrados = usuarios;
     const select = document.getElementById("user-select");
     select.innerHTML = usuarios.map(u => `<option value="${u.id_ludica}">${u.nametag} (${u.tipo_perfil})</option>`).join("");
     
@@ -142,7 +148,7 @@ async function visualizarJogo(id_jogo, jogar = false) {
     if(res.ok) {
         const data = await res.json();
         document.getElementById("preview-title").innerText = `Visualizando: ${data.assunto}`;
-        mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade, data.assunto);
+        mostrarPreview(data.matriz_letras, data.perguntas_respostas, data.dificuldade, data.assunto, data.id_jogo);
         mostrarCodigoNoPreview(data.codigo);
         document.getElementById("btn-preview-voltar").onclick = perfilAluno ? () => showScreen('screen-filtros-aluno') : carregarMeusJogos; 
         showScreen('screen-preview');
@@ -548,11 +554,12 @@ function corDoPar(i) {
     return `hsl(${Math.round((i * 137.508) % 360)}, 80%, 82%)`;
 }
 
-function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
+function mostrarPreview(matriz, perguntas, dificuldade, assunto = "", idJogo = null) {
     const celulas = renderizarMatriz(matriz);
     const ocorrencias = perguntas.map(pr => celulasDoPar(matriz, pr, dificuldade));
     previewAtual = { celulas, ocorrencias };
-    jogoAtual = { matriz, perguntas, dificuldade, assunto };
+    jogoAtual = { matriz, perguntas, dificuldade, assunto, id_jogo: idJogo };
+    pontos = 0;
     mostrarRespostas = false;
     modoJogo = false;
     achadas = new Map();
@@ -590,7 +597,9 @@ function mostrarPreview(matriz, perguntas, dificuldade, assunto = "") {
     document.getElementById("barra-jogo").style.display = "none";
     document.getElementById("btn-jogar").innerText = "🎮 Jogar este caça-palavras";
     document.getElementById("btn-toggle-respostas").style.display = perfilAluno ? "none" : "";
-    document.querySelector(".selo-teste").textContent = perfilAluno ? "Por enquanto, sem pontuação" : "MODO TESTE";
+    document.querySelector(".selo-teste").textContent = perfilAluno ? "VALENDO PONTOS" : "MODO TESTE";
+    // o placar só aparece para o aluno (partida do professor é só teste e não pontua)
+    document.getElementById("jogo-pontos-wrap").style.display = perfilAluno ? "" : "none";
     atualizarBotaoRespostas();
     aplicarDestaques();
 }
@@ -628,6 +637,7 @@ function iniciarJogo() {
     if (!jogoAtual) return;
     modoJogo = true;
     achadas = new Map();
+    pontos = 0;
     dicaSelecionada = null;
     mostrarRespostas = false;
     limparSelecao();
@@ -644,11 +654,20 @@ function iniciarJogo() {
     mostrarMensagemJogo("Primeiro, clique em uma dica na lista. Depois, encontre a palavra na grade!", "");
 }
 
+// Botão "Jogar / Reiniciar": se o aluno está no meio de uma partida, confirma antes de zerar a pontuação
+async function clicouJogar() {
+    const total = jogoAtual ? jogoAtual.perguntas.length : 0;
+    const noMeio = modoJogo && perfilAluno && achadas.size < total && (achadas.size > 0 || pontos !== 0);
+    if (noMeio && !(await confirmarAcao("Se reiniciar, a partida atual (e sua pontuação) será descartada.", { titulo: "Reiniciar partida?", textoOk: "Reiniciar", perigo: true }))) return;
+    iniciarJogo();
+}
+
 function mostrarMensagemJogo(texto = "Arraste da primeira à última letra e confirme com ✔", tipo = "") {
     const msg = document.getElementById("jogo-msg");
     msg.textContent = texto;
     msg.className = tipo;
     document.getElementById("jogo-contador").textContent = `${achadas.size}/${jogoAtual.perguntas.length}`;
+    document.getElementById("jogo-pontos").textContent = pontos;
 }
 
 function selecionarDica(index) {
@@ -756,6 +775,7 @@ function confirmarSelecao() {
     if (letras === respostaCerta || invertida === respostaCerta) {
         tocarSom(somCorreto);
         achadas.set(dicaSelecionada, selecao.cels);
+        pontos += PONTOS_ACERTO;
         const indexAcerto = dicaSelecionada;
         dicaSelecionada = null; // reseta a seleção para obrigar a clicar na próxima dica
         
@@ -765,15 +785,17 @@ function confirmarSelecao() {
         
         if (achadas.size === perguntas.length) {
             mostrarMensagemJogo("🎉 Parabéns! Você encontrou e associou todas as palavras.", "sucesso");
+            if (perfilAluno) finalizarPartida(); // professor só testa: nada é salvo
         } else {
-            mostrarMensagemJogo(`Boa! Achou "${perguntas[indexAcerto].resposta}". Escolha a próxima dica.`, "sucesso");
+            mostrarMensagemJogo(`Boa! Achou "${perguntas[indexAcerto].resposta}". Escolha a próxima dica.${perfilAluno ? ` (+${PONTOS_ACERTO})` : ""}`, "sucesso");
         }
     } else {
         tocarSom(somIncorreto);
         pintarSelecao(true);
         const errada = selecao;
         setTimeout(() => { if (selecao === errada) limparSelecao(); }, 450);
-        mostrarMensagemJogo("Palavra incorreta ou associada à dica errada. Tente de novo.", "erro");
+        pontos -= PONTOS_ERRO;
+        mostrarMensagemJogo(`Palavra incorreta ou associada à dica errada. Tente de novo.${perfilAluno ? ` (-${PONTOS_ERRO})` : ""}`, "erro");
     }
 }
 
@@ -1011,6 +1033,95 @@ function renderizarJogosAluno(jogos, codigo = null) {
     });
 }
 
+// ---------- Fim da partida do aluno: salva a pontuação no histórico (RN06) ----------
+async function finalizarPartida() {
+    const idJogo = jogoAtual && jogoAtual.id_jogo;
+    if (!idJogo) return;
+    const pontuacao = pontos; // guarda o valor: a partir daqui a pontuação não muda mais
+    const salvo = await salvarPartida(idJogo, pontuacao);
+    if (!salvo) {
+        return mostrarAviso(`Você concluiu o jogo com ${pontuacao} pontos, mas esta partida NÃO foi salva no histórico.`, { titulo: "Partida não salva", tipo: "erro" });
+    }
+    const verHistorico = await confirmarAcao(`Você encontrou e associou todas as palavras.\n\nPontuação final: ${pontuacao}\n\nSua partida foi salva no histórico.`,
+        { titulo: "Partida concluída!", tipo: "sucesso", textoOk: "Ver histórico", textoCancelar: "Fechar" });
+    if (verHistorico) abrirHistorico();
+}
+
+// Devolve true se salvou. Se falhar, oferece tentar de novo.
+async function salvarPartida(idJogo, pontuacao) {
+    while (true) {
+        let motivo;
+        try {
+            const res = await fetch(`${API_URL}/partidas`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id_aluno: parseInt(currentUser), id_jogo: idJogo, pontuacao_obtida: pontuacao })
+            });
+            if (res.ok) return true;
+            const err = await res.json().catch(() => ({}));
+            motivo = typeof err.detail === "string" ? err.detail : "Erro ao salvar a partida.";
+        } catch (_) {
+            motivo = "Não foi possível falar com o servidor.";
+        }
+        const tentar = await confirmarAcao(`${motivo}\n\nDeseja tentar salvar de novo?`,
+            { titulo: "Não foi possível salvar a partida", textoOk: "Tentar de novo", textoCancelar: "Agora não" });
+        if (!tentar) return false;
+    }
+}
+
+// ---------- Perfil e Histórico do aluno (RN06 / UC-05) ----------
+async function abrirHistorico() {
+    let partidas;
+    try {
+        const res = await fetch(`${API_URL}/alunos/${currentUser}/historico`);
+        if (!res.ok) throw new Error();
+        partidas = await res.json();
+    } catch (_) {
+        return mostrarAviso("Não foi possível carregar seu histórico agora. Tente de novo.", { titulo: "Erro ao carregar", tipo: "erro" });
+    }
+    const usuario = usuariosCadastrados.find(u => String(u.id_ludica) === String(currentUser));
+    document.getElementById("perfil-nome").textContent = usuario ? usuario.nametag : "-";
+    document.getElementById("perfil-email").textContent = usuario ? usuario.email : "-";
+    document.getElementById("perfil-partidas").textContent = partidas.length;
+    document.getElementById("perfil-melhor").textContent = partidas.length ? Math.max(...partidas.map(p => p.pontuacao_obtida)) : "-";
+    renderizarHistorico(partidas);
+    showScreen("screen-historico");
+}
+
+function renderizarHistorico(partidas) {
+    const ul = document.getElementById("lista-historico");
+    ul.innerHTML = "";
+    if (partidas.length === 0) {
+        const vazio = document.createElement("li");
+        vazio.className = "list-item";
+        vazio.textContent = "Você ainda não concluiu nenhuma partida.";
+        ul.appendChild(vazio);
+        return;
+    }
+    partidas.forEach(p => {
+        // textContent: o texto cadastrado pelo professor nunca é interpretado como HTML
+        const li = document.createElement("li");
+        li.className = "list-item card-jogo card-partida";
+        const info = document.createElement("div");
+        info.className = "texto-par";
+        const titulo = document.createElement("b");
+        titulo.textContent = `${p.disciplina} · ${p.assunto}`;
+        const detalhe = document.createElement("div");
+        detalhe.className = "card-detalhe";
+        const data = new Date(p.data_conclusao).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+        detalhe.textContent = `${p.professor} · ${p.dificuldade} · ${p.qtd_palavras} palavras · ${data}`;
+        info.append(titulo, detalhe);
+        const pontosEl = document.createElement("div");
+        pontosEl.className = "pontos-partida" + (p.pontuacao_obtida < 0 ? " negativa" : "");
+        pontosEl.textContent = p.pontuacao_obtida;
+        const rotulo = document.createElement("small");
+        rotulo.textContent = "PONTOS";
+        pontosEl.appendChild(rotulo);
+        li.append(info, pontosEl);
+        ul.appendChild(li);
+    });
+}
+
 // ---------- Janelas de aviso e confirmação (no lugar de alert / confirm do navegador) ----------
 // mostrarAviso(mensagem, { titulo, tipo })  -> Promise que resolve quando o usuário fecha
 // confirmarAcao(mensagem, { titulo, textoOk, textoCancelar, perigo })  -> Promise<boolean>
@@ -1090,8 +1201,8 @@ function mostrarAviso(mensagem, { titulo = "", tipo = "aviso", textoOk = "OK" } 
     return enfileirarModal({ mensagem, titulo, tipo, confirmar: false, textoOk });
 }
 
-function confirmarAcao(mensagem, { titulo = "Confirmar", textoOk = "Confirmar", textoCancelar = "Cancelar", perigo = false } = {}) {
-    return enfileirarModal({ mensagem, titulo, tipo: "aviso", confirmar: true, textoOk, textoCancelar, perigo });
+function confirmarAcao(mensagem, { titulo = "Confirmar", textoOk = "Confirmar", textoCancelar = "Cancelar", perigo = false, tipo = "aviso" } = {}) {
+    return enfileirarModal({ mensagem, titulo, tipo, confirmar: true, textoOk, textoCancelar, perigo });
 }
 
 // ---------- Configurações (sons) ----------
@@ -1158,7 +1269,7 @@ function abrirConfiguracoes() {
     showScreen("screen-config");
 }
 
-// ---------- Créditos ----------
+// Créditos
 const CREDITOS = {
     descricao: "O WordHunt foi um jogo desenvolvido para a disciplina Projeto e Construção de Sistemas, com o objetivo de ser um jogo educativo interdisciplinar, onde o jogador pode testar seus conhecimentos.",
     equipe: ["Clara Ribeiro Barreto", "Julia Iacovellis Pinho", "Kaio da Silva dos Santos"],

@@ -96,6 +96,10 @@ CONFIG = {
 MIN_PALAVRAS = 10
 MAX_LETRAS = 15
 
+# Pontuação do aluno (telas do protótipo: acerto +5, associação errada -5). Deve ser igual a
+# PONTOS_ACERTO em frontend/script.js. O backend só usa para conferir o teto da pontuação recebida.
+PONTOS_ACERTO = 5
+
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
 
@@ -372,3 +376,66 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
     if not atualizado:
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
     return {"id_jogo": id_jogo, "codigo": atualizado["codigo"], "matriz": matriz, "perguntas_respostas": pares}
+
+# ---------- Partidas do aluno (RN02, RN06 / UC-04 e UC-05) ----------
+class PartidaCreate(BaseModel):
+    id_aluno: int
+    id_jogo: int
+    pontuacao_obtida: int
+
+@app.post("/api/partidas")
+def registrar_partida(partida: PartidaCreate):
+    """Grava uma partida CONCLUÍDA do aluno na tabela Partida_Historico.
+    Partidas do professor (modo teste) nunca chegam aqui: o front-end só chama quando quem joga é aluno."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT tipo_perfil FROM Usuario WHERE id_ludica = %s;", (partida.id_aluno,))
+        usuario = cur.fetchone()
+        if not usuario:
+            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        if usuario["tipo_perfil"] != "Aluno":
+            raise HTTPException(status_code=403, detail="Apenas alunos têm partidas registradas.")
+
+        cur.execute("SELECT jsonb_array_length(perguntas_respostas) AS qtd FROM Caca_Palavras WHERE id_jogo = %s;",
+                    (partida.id_jogo,))
+        jogo = cur.fetchone()
+        if not jogo:
+            raise HTTPException(status_code=404, detail="Jogo não encontrado.")
+        if partida.pontuacao_obtida > PONTOS_ACERTO * jogo["qtd"]:
+            raise HTTPException(status_code=400, detail="Pontuação inválida para este jogo.")
+
+        cur.execute("""
+            INSERT INTO Partida_Historico (id_aluno, id_jogo, pontuacao_obtida)
+            VALUES (%s, %s, %s)
+            RETURNING id_partida, data_conclusao AT TIME ZONE 'UTC' AS data_conclusao;
+        """, (partida.id_aluno, partida.id_jogo, partida.pontuacao_obtida))
+        nova = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    return nova
+
+@app.get("/api/alunos/{id_aluno}/historico")
+def get_historico_aluno(id_aluno: int):
+    """Partidas do aluno, da mais recente para a mais antiga. Os dados do jogo (disciplina, assunto,
+    dificuldade, professor, qtd de palavras) vêm do cadastro ATUAL do jogo."""
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT h.id_partida, h.pontuacao_obtida,
+                   h.data_conclusao AT TIME ZONE 'UTC' AS data_conclusao,
+                   c.disciplina, c.assunto, c.dificuldade,
+                   u.nametag AS professor,
+                   jsonb_array_length(c.perguntas_respostas) AS qtd_palavras
+            FROM Partida_Historico h
+            JOIN Caca_Palavras c ON c.id_jogo = h.id_jogo
+            JOIN Usuario u ON u.id_ludica = c.id_professor
+            WHERE h.id_aluno = %s
+            ORDER BY h.data_conclusao DESC, h.id_partida DESC;
+        """, (id_aluno,))
+        partidas = cur.fetchall()
+    finally:
+        conn.close()
+    return partidas

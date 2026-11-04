@@ -443,3 +443,14 @@ button:disabled:active { transform: none; }
 .creditos-lista { margin: 0 0 16px; padding-left: 22px; line-height: 1.8; }
 .creditos-prof { font-weight: bold; }
 @media (max-width: 520px) { .cfg-volume-wrap input[type="range"] { width: 120px; } }
+
+/* ---------- Perfil e Histórico do aluno ---------- */
+.titulo-historico { margin: 22px 0 6px; font-size: 16px; }
+#screen-historico .cfg-linha:last-child { border-bottom: none; }
+.card-partida .pontos-partida {
+    flex: none; margin-left: 12px; min-width: 64px; text-align: center;
+    font-weight: 900; font-size: 18px; font-family: monospace;
+    background-color: #9be3a5; border: 2px solid #202020; border-radius: 12px; padding: 6px 10px;
+}
+.card-partida .pontos-partida.negativa { background-color: #f2a7a7; }
+.card-partida .pontos-partida small { display: block; font-family: inherit; font-size: 10px; font-weight: bold; letter-spacing: 1px; }

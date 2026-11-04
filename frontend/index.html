@@ -38,6 +38,7 @@
             <h2>Painel do Aluno</h2>
             <div class="btn-group" style="flex-direction: column;">
                 <button onclick="abrirFiltrosAluno()">Jogar</button>
+                <button onclick="abrirHistorico()">Perfil e Histórico</button>
                 <button onclick="abrirConfiguracoes()">Configurações</button>
                 <button onclick="abrirCreditos()">Créditos</button>
             </div>
@@ -87,6 +88,21 @@
             </div>
             <ul id="lista-jogos-aluno" class="list-container" style="max-height: 420px;"></ul>
             <button class="btn-voltar" style="margin-top: 20px;" onclick="showScreen('screen-menu-aluno')">Voltar à Página Inicial</button>
+        </div>
+
+        <!-- TELA PERFIL E HISTÓRICO DO ALUNO (RN06 / UC-05) -->
+        <div id="screen-historico" class="screen">
+            <h2>Perfil e Histórico</h2>
+            <div class="cfg-card">
+                <h3>Perfil</h3>
+                <div class="cfg-linha"><span>Nome</span><b id="perfil-nome"></b></div>
+                <div class="cfg-linha"><span>E-mail</span><b id="perfil-email"></b></div>
+                <div class="cfg-linha"><span>Partidas concluídas</span><b id="perfil-partidas">0</b></div>
+                <div class="cfg-linha"><span>Melhor pontuação</span><b id="perfil-melhor">-</b></div>
+            </div>
+            <h3 class="titulo-historico">Histórico de partidas</h3>
+            <ul id="lista-historico" class="list-container" style="max-height: 420px;"></ul>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="voltarDoMenuSecundario()">Voltar à Página Inicial</button>
         </div>
 
         <!-- TELA CONFIGURAÇÕES (sons) -->
@@ -248,12 +264,13 @@
             </div>
             <div class="btn-group preview-acoes">
                 <button id="btn-toggle-respostas" onclick="alternarRespostas()">👁 Mostrar respostas na grade</button>
-                <button id="btn-jogar" onclick="iniciarJogo()">🎮 Jogar este caça-palavras</button>
+                <button id="btn-jogar" onclick="clicouJogar()">🎮 Jogar este caça-palavras</button>
             </div>
             <!-- Aparece só no modo jogo (professor testando: sem pontuação) -->
             <div id="barra-jogo" class="barra-jogo" style="display: none;">
                 <span class="selo-teste">MODO TESTE</span>
                 <span>Encontradas: <b id="jogo-contador">0/0</b></span>
+                <span id="jogo-pontos-wrap">Pontuação: <b id="jogo-pontos">0</b></span>
                 <span id="jogo-msg">Arraste da primeira à última letra e confirme com ✔</span>
             </div>
             <div id="preview-layout" class="preview-layout">
