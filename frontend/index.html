@@ -5,25 +5,17 @@
     <title>WordHunt</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body> 
     <div class="container">
-        <!-- TELA DE LOGIN -->
-        <div id="screen-login" class="screen active">
-            <h2>Bem-vindo ao WordHunt</h2>
-            <select id="user-select">
-                <option value="">Carregando usuários...</option>
-            </select>
-            <button onclick="login()">Entrar no Sistema</button>
-        </div>
-
         <!-- TELA MENU PROFESSOR -->
         <div id="screen-menu-prof" class="screen">
             <h2>Painel do Professor</h2>
             <div class="btn-group" style="flex-direction: column;">
                 <button onclick="carregarMeusJogos()">Visualizar Meus Caça-Palavras</button>
                 <button onclick="iniciarCriacao()">Criar Novo Caça-Palavras</button>
+                <button onclick="abrirConfiguracoes()">Configurações</button>
+                <button onclick="abrirCreditos()">Créditos</button>
             </div>
-            <button class="btn-voltar" style="margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
         </div>
 
         <!-- TELA LISTAGEM DE JOGOS -->
@@ -42,7 +34,6 @@
                 <button onclick="abrirConfiguracoes()">Configurações</button>
                 <button onclick="abrirCreditos()">Créditos</button>
             </div>
-            <button class="btn-voltar" style="margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
         </div>
 
         <!-- TELA FILTROS DO ALUNO (RN05): código, professor, disciplina, assunto e dificuldade -->
@@ -87,7 +78,7 @@
                 <button class="btn-voltar btn-pequeno" onclick="limparFiltrosAluno()">Limpar filtros</button>
             </div>
             <ul id="lista-jogos-aluno" class="list-container" style="max-height: 420px;"></ul>
-            <button class="btn-voltar" style="margin-top: 20px;" onclick="showScreen('screen-menu-aluno')">Voltar à Página Inicial</button>
+            <button class="btn-voltar" style="margin-top: 20px;" onclick="voltarAoMenu()">Voltar à Página Inicial</button>
         </div>
 
         <!-- TELA PERFIL E HISTÓRICO DO ALUNO (RN06 / UC-05) -->

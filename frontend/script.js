@@ -15,24 +15,22 @@ const MAX_LETRAS = 15;
 // Pontuação do aluno (telas do protótipo: acerto +5, associação errada -5). PONTOS_ACERTO deve ser igual ao do backend/main.py.
 const PONTOS_ACERTO = 5;
 const PONTOS_ERRO = 5;
-let usuariosCadastrados = []; // lista vinda de /api/usuarios (usada para mostrar o perfil do aluno)
+let usuariosCadastrados = []; // lista de usuários (usada para mostrar o perfil do aluno)
 let pontos = 0;               // pontuação da partida em andamento
 let parEmEdicao = null; // índice do par que está sendo editado (null = cadastrando um novo)
 
 window.onload = async () => {
-    const res = await fetch(`${API_URL}/usuarios`);
-    const usuarios = await res.json();
-    usuariosCadastrados = usuarios;
-    const select = document.getElementById("user-select");
-    select.innerHTML = usuarios.map(u => `<option value="${u.id_ludica}">${u.nametag} (${u.tipo_perfil})</option>`).join("");
-    
     // Fecha o dropdown se clicar fora
     document.addEventListener("click", (e) => {
         if (!e.target.closest('.input-container')) {
-            document.getElementById("dropdown-disciplina").style.display = "none";
-            document.getElementById("dropdown-assunto").style.display = "none";
+            const dropDisc = document.getElementById("dropdown-disciplina");
+            const dropAssunto = document.getElementById("dropdown-assunto");
+            if (dropDisc) dropDisc.style.display = "none";
+            if (dropAssunto) dropAssunto.style.display = "none";
         }
     });
+
+    await iniciarSessaoLudica();
 };
 
 function showScreen(id) {
@@ -53,15 +51,56 @@ function updateProgressBar(step) {
     if(step >= 1 && step <= 4) document.getElementById(`step-ind-${step}`).classList.add('active');
 }
 
-function login() {
-    const select = document.getElementById("user-select");
-    currentUser = select.value;
-    perfilAluno = !select.options[select.selectedIndex].text.includes("Professor");
-    showScreen(perfilAluno ? 'screen-menu-aluno' : 'screen-menu-prof');
+async function iniciarSessaoLudica() {
+    let usuario = null;
+
+    // caso o Lúdica envie os dados via URL ao abrir o jogo
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("nametag") && params.has("hash")) {
+        const resAuth = await fetch(`${API_URL}/auth/ludica`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                nametag: params.get("nametag"),
+                email: params.get("email"),
+                tipo_perfil: params.get("tipo_perfil"),
+                data_str: params.get("data_str"),
+                hash_recebida: params.get("hash")
+            })
+        });
+        if (!resAuth.ok) {
+            mostrarAviso("Falha na autenticação com a plataforma Lúdica.", { titulo: "Acesso negado", tipo: "erro" });
+            return;
+        }
+        const dataAuth = await resAuth.json();
+        usuario = dataAuth.usuario;
+    }
+
+    // se não vieram dados na URL, consulta quem foi autenticado via POST no backend (serve para simular)
+    if (!usuario) {
+        const res = await fetch(`${API_URL}/sessao`);
+        if (!res.ok) {
+            mostrarAviso("Envie a requisição de autenticação no Thunder Client e recarregue a página (F5)!", { titulo: "Aguardando autenticação Lúdica", tipo: "info" });
+            return;
+        }
+        usuario = await res.json();
+    }
+
+    // variávies globais do usuário logado
+    currentUser = usuario.id_ludica;
+    perfilAluno = (usuario.tipo_perfil === "Aluno");
+    usuariosCadastrados = [usuario]; // garante que abrirHistorico() encontre o nome e o e-mail do aluno
+
+    // direciona direto para o painel correspondente ao perfil
+    if (perfilAluno) {
+        showScreen("screen-menu-aluno");
+    } else {
+        showScreen("screen-menu-prof");
+    }
 }
 
 function voltarAoMenu() {
-    showScreen('screen-menu-prof');
+    showScreen(perfilAluno ? 'screen-menu-aluno' : 'screen-menu-prof');
 }
 
 async function iniciarCriacao() {

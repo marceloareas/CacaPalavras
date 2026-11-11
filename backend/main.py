@@ -4,6 +4,9 @@ import random
 import secrets
 import string
 import time
+import hashlib
+import urllib.request
+from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI, HTTPException
@@ -377,7 +380,75 @@ def atualizar_jogo(id_jogo: int, jogo: JogoCreate):
         raise HTTPException(status_code=404, detail="Jogo não encontrado")
     return {"id_jogo": id_jogo, "codigo": atualizado["codigo"], "matriz": matriz, "perguntas_respostas": pares}
 
-# ---------- Partidas do aluno (RN02, RN06 / UC-04 e UC-05) ----------
+# integração com a Plataforma Lúdica (RN01)
+
+sessao_atual = None # guardar o usuário que acabou de ser autenticado pelo ludica
+
+class LudicaAuth(BaseModel):
+    nametag: str
+    email: str
+    tipo_perfil: str  # 'Professor', 'Aluno', 'professor' ou 'aluno'
+    data_str: str     # formato esperado: DDMMAAAA
+    hash_recebida: str
+
+@app.post("/api/auth/ludica")
+def autenticar_via_ludica(dados: LudicaAuth):
+    """
+    1. ENTRADA: O Lúdica chama esta rota ao redirecionar o usuário para o WordHunt.
+    Valida a hash de segurança e cadastra/retorna o usuário no banco local do WordHunt.
+    """
+    global sessao_atual
+    seed = f"LUD1C@-{dados.nametag}-{dados.data_str}"
+    hash_gerada = hashlib.sha256(seed.encode("utf-8")).hexdigest()
+
+    if hash_gerada != dados.hash_recebida:
+        raise HTTPException(status_code=401, detail="Acesso negado: Hash de validação inválida.")
+
+    # padroniza para 'Aluno' ou 'Professor'
+    perfil_formatado = dados.tipo_perfil.strip().capitalize()
+    if perfil_formatado not in ("Professor", "Aluno"):
+        raise HTTPException(status_code=400, detail="Tipo de perfil inválido. Use 'Professor' ou 'Aluno'.")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM Usuario WHERE email = %s;", (dados.email,))
+        usuario = cur.fetchone()
+
+        if not usuario:
+            cur.execute("""
+                INSERT INTO Usuario (nametag, email, tipo_perfil)
+                VALUES (%s, %s, %s) RETURNING id_ludica, nametag, email, tipo_perfil;
+            """, (dados.nametag, dados.email, perfil_formatado))
+            usuario = cur.fetchone()
+        else:
+            # atualiza nametag e perfil caso tenham mudado no Lúdica
+            cur.execute("""
+                UPDATE Usuario SET nametag = %s, tipo_perfil = %s
+                WHERE email = %s RETURNING id_ludica, nametag, email, tipo_perfil;
+            """, (dados.nametag, perfil_formatado, dados.email))
+            usuario = cur.fetchone()
+
+        conn.commit()
+        sessao_atual = dict(usuario)
+        return {"status": "sucesso", "usuario": usuario}
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.get("/api/sessao")
+def obter_sessao():
+    """Devolve para o frontend quem é o usuário autenticado no momento."""
+    if not sessao_atual:
+        raise HTTPException(status_code=401, detail="Nenhum usuário autenticado via Lúdica.")
+    return sessao_atual
+
+# partidas do aluno (RN02, RN06 / UC-04 e UC-05) e envio ao ludica
 class PartidaCreate(BaseModel):
     id_aluno: int
     id_jogo: int
@@ -385,12 +456,14 @@ class PartidaCreate(BaseModel):
 
 @app.post("/api/partidas")
 def registrar_partida(partida: PartidaCreate):
-    """Grava uma partida CONCLUÍDA do aluno na tabela Partida_Historico.
-    Partidas do professor (modo teste) nunca chegam aqui: o front-end só chama quando quem joga é aluno."""
+    """
+    2. SAÍDA: Grava uma partida CONCLUÍDA do ALUNO na tabela Partida_Historico
+    e prepara/envia os pontos e a data para a API da plataforma Lúdica.
+    """
     conn = get_db_connection()
     cur = conn.cursor()
     try:
-        cur.execute("SELECT tipo_perfil FROM Usuario WHERE id_ludica = %s;", (partida.id_aluno,))
+        cur.execute("SELECT nametag, email, tipo_perfil FROM Usuario WHERE id_ludica = %s;", (partida.id_aluno,))
         usuario = cur.fetchone()
         if not usuario:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
@@ -412,7 +485,44 @@ def registrar_partida(partida: PartidaCreate):
         """, (partida.id_aluno, partida.id_jogo, partida.pontuacao_obtida))
         nova = cur.fetchone()
         conn.commit()
+
+        # prepara e simula o envio dos pontos
+        data_str_atual = datetime.now().strftime("%d%m%Y")
+        nametag_aluno = usuario["nametag"]
+        seed_saida = f"LUD1C@-{nametag_aluno}-{data_str_atual}"
+        hash_saida = hashlib.sha256(seed_saida.encode("utf-8")).hexdigest()
+
+        payload_para_ludica = {
+            "nametag": nametag_aluno,
+            "email": usuario["email"],
+            "pontuacao": partida.pontuacao_obtida,
+            "data": data_str_atual,
+            "hash": hash_saida
+        }
+
+        # exibe no log do container do backend para teste
+        print(f"[INTEGRAÇÃO LÚDICA] Enviando pontuação de fim de partida: {json.dumps(payload_para_ludica, ensure_ascii=False)}", flush=True)
+
+        # QUANDO A EQUIPE DO LUDICA ENTREGAR A URL DELES, descomentar:
+        # try:
+        #     req = urllib.request.Request(
+        #         url="http://url-do-ludica/api/pontuacao",
+        #         data=json.dumps(payload_para_ludica).encode("utf-8"),
+        #         headers={"Content-Type": "application/json"},
+        #         method="POST"
+        #     )
+        #     with urllib.request.urlopen(req, timeout=5) as resp:
+        #         print("[INTEGRAÇÃO LÚDICA] Resposta recebida:", resp.status, flush=True)
+        # except Exception as err:
+        #     print("[INTEGRAÇÃO LÚDICA] Aviso: Lúdica offline, pontos salvos localmente:", err, flush=True)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
+        cur.close()
         conn.close()
     return nova
 
