@@ -1,0 +1,20 @@
+Conjunto de lobos.;Alcateia
+Conjunto de peixes.;Cardume
+Conjunto de ilhas próximas entre si.;Arquipélago
+Conjunto de estrelas.;Constelação
+Conjunto de abelhas ou vespas.;Enxame
+Conjunto de livros catalogados.;Biblioteca
+Conjunto de cães de caça.;Matilha
+Conjunto de aves em voo.;Bando
+Conjunto de navios de guerra.;Esquadra
+Conjunto de mapas reunidos em um volume.;Atlas
+Conjunto de uvas ou bananas.;Cacho
+Conjunto de camelos ou viajantes no deserto.;Caravana
+Conjunto de bois.;Boiada
+Conjunto de músicos que tocam juntos.;Orquestra
+Conjunto de quadros ou pinturas.;Pinacoteca
+Conjunto de chaves.;Molho
+Conjunto de ovelhas ou cabras.;Rebanho
+Conjunto de montanhas ligadas entre si.;Cordilheira
+Conjunto de árvores frutíferas.;Pomar
+Conjunto de filmes armazenados.;Filmoteca

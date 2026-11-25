@@ -1,0 +1,25 @@
+Animais que possuem coluna vertebral e crânio.;Vertebrados
+Animais que não possuem coluna vertebral.;Invertebrados
+Classe de animais com pelos e glândulas mamárias.;Mamíferos
+Vertebrados de pele seca e escamosa, como cobras e jacarés.;Répteis
+Animais com vida aquática na fase larval e terrestre na adulta.;Anfíbios
+Vertebrados endotérmicos cobertos por penas e com bico.;Aves
+Vertebrados aquáticos que respiram geralmente por brânquias.;Peixes
+Filo com patas articuladas e exoesqueleto de quitina.;Artrópodes
+Animais de corpo mole, muitas vezes protegido por concha.;Moluscos
+Vermes de corpo segmentado em anéis, como a minhoca.;Anelídeos
+Animais aquáticos com células urticantes, como águas-vivas.;Cnidários
+Animais filtradores cheios de poros, como as esponjas.;Poríferos
+Animais marinhos de pele espinhosa, como a estrela-do-mar.;Equinodermos
+Vermes de corpo achatado, como a planária e a tênia.;Platelmintos
+Vermes de corpo cilíndrico, como a lombriga.;Nematelmintos
+Filo que inclui animais com notocorda em alguma fase da vida.;Cordados
+Artrópodes com seis patas e corpo dividido em três partes.;Insetos
+Artrópodes com oito patas, como aranhas e escorpiões.;Aracnídeos
+Artrópodes geralmente aquáticos, como caranguejos e camarões.;Crustáceos
+Mamíferos que possuem uma bolsa abdominal para os filhotes.;Marsupiais
+Transformação drástica na forma do corpo durante o desenvolvimento.;Metamorfose
+Esqueleto externo rígido que protege o corpo dos artrópodes.;Exoesqueleto
+Órgãos respiratórios adaptados para extrair oxigênio da água.;Brânquias
+Animais capazes de manter a temperatura corporal constante.;Endotérmicos
+Animais cuja temperatura corporal varia conforme o ambiente.;Ectotérmicos

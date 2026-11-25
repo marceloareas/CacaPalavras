@@ -1,0 +1,12 @@
+Grandeza que mede a rapidez com que um corpo se move.;Velocidade
+Taxa de variação da velocidade de um corpo no tempo.;Aceleração
+Agente capaz de alterar o estado de movimento de um corpo.;Força
+Tendência de um corpo manter seu estado de repouso ou movimento.;Inércia
+Força que atrai todos os corpos em direção ao centro da Terra.;Gravidade
+Força que se opõe ao movimento entre duas superfícies em contato.;Atrito
+Quantidade de matéria presente em um corpo.;Massa
+Força com que a gravidade atrai a massa de um corpo.;Peso
+Capacidade de um sistema realizar trabalho.;Energia
+Energia associada ao movimento dos corpos.;Cinética
+Rapidez com que um trabalho é realizado ou energia é transferida.;Potência
+Produto da força aplicada pelo deslocamento realizado.;Trabalho

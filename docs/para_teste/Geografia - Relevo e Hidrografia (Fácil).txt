@@ -1,0 +1,14 @@
+Grande elevação natural do terreno.;Montanha
+Terreno elevado e plano no topo, sujeito à erosão.;Planalto
+Terreno plano e baixo onde predominam sedimentos.;Planície
+Área mais baixa em relação aos terrenos vizinhos.;Depressão
+Curso natural de água doce que deságua no mar ou em outro rio.;Rio
+Local onde um rio nasce.;Nascente
+Ponto onde um rio deságua no mar ou em outro curso d'água.;Foz
+Rio menor que deságua em um rio principal.;Afluente
+Porção de terra cercada de água por todos os lados.;Ilha
+Porção de terra cercada de água, exceto por um lado.;Península
+Grande queda d'água em um curso de rio.;Cachoeira
+Depressão alongada entre montanhas ou colinas.;Vale
+Reserva natural de água subterrânea.;Aquífero
+Desgaste do solo e das rochas pela água ou vento.;Erosão
